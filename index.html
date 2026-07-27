@@ -4247,6 +4247,17 @@ function screenshotHistoryDetail() {
   });
 }
 
+/* 历史详情表格中板块名称格式化：超过6个字自动缩小字号，宽度与6字一致 */
+function formatDetailCellName(name) {
+  if (!name) return '—';
+  const escaped = escapeHtml(name);
+  const len = name.length;
+  if (len <= 6) return escaped;
+  // 超过6个字：字号 = 12 * (6/字数)，确保不换行且宽度一致
+  const fontSize = (12 * 6 / len).toFixed(1);
+  return `<span style="font-size:${fontSize}px;white-space:nowrap;display:inline-block">${escaped}</span>`;
+}
+
 function renderHistoryFundTable(title, fundData, kind) {
   if (!fundData || (!fundData.in && !fundData.out)) return '';
   const inArr = fundData.in || [];
@@ -4255,7 +4266,7 @@ function renderHistoryFundTable(title, fundData, kind) {
 
   const isPct = kind !== 'fund';
   let html = `<div style="margin-bottom:10px"><strong style="font-size:13px">${title}</strong>`;
-  html += `<table class="detail-table"><thead><tr><th>#</th><th>${isPct ? '涨幅前' : '左列'}</th><th>${isPct ? '涨幅' : '金额(亿)'}</th><th>${isPct ? '跌幅前' : '右列'}</th><th>${isPct ? '跌幅' : '金额(亿)'}</th></tr></thead><tbody>`;
+  html += `<table class="detail-table"><thead><tr><th>#</th><th>${isPct ? '涨幅前' : '流入'}</th><th>${isPct ? '涨幅' : '金额(亿)'}</th><th>${isPct ? '跌幅前' : '流出'}</th><th>${isPct ? '跌幅' : '金额(亿)'}</th></tr></thead><tbody>`;
   for (let i = 0; i < 6; i++) {
     const inItem = inArr[i];
     const outItem = outArr[i];
@@ -4275,9 +4286,9 @@ function renderHistoryFundTable(title, fundData, kind) {
     }
 
     html += `<tr><td>${i+1}</td>`;
-    html += `<td>${inItem ? escapeHtml(inItem.name) : '—'}</td>`;
+    html += `<td>${inItem ? formatDetailCellName(inItem.name) : '—'}</td>`;
     html += `<td>${valHtml(inItem)}</td>`;
-    html += `<td>${outItem ? escapeHtml(outItem.name) : '—'}</td>`;
+    html += `<td>${outItem ? formatDetailCellName(outItem.name) : '—'}</td>`;
     html += `<td>${valHtml(outItem)}</td>`;
     html += `</tr>`;
   }
