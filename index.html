@@ -1149,6 +1149,62 @@
   #historyView.show { display: block; }
   #mainView.hide { display: none; }
 
+  /* ===== 个股视图 ===== */
+  #stockView {
+    display: none;
+    padding-bottom: 100px;
+  }
+  #stockView.show { display: block; }
+  /* 个股卡片：复用 history-card 样式 */
+  .stock-summary-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .stock-summary-card:hover { border-color: var(--blue); background: var(--panel-2); }
+  .stock-summary-card .ssc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .stock-summary-card .ssc-name { font-size: 16px; font-weight: 600; }
+  .stock-summary-card .ssc-count { font-size: 12px; color: var(--text-dim); }
+  .stock-summary-card .ssc-records { margin-top: 10px; display: none; }
+  .stock-summary-card.expanded .ssc-records { display: block; }
+  .stock-summary-card .ssc-record {
+    background: var(--panel-2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+  }
+  .stock-summary-card .ssc-record-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .stock-summary-card .ssc-record-change {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .stock-summary-card .ssc-record-change.up { color: var(--red); }
+  .stock-summary-card .ssc-record-change.down { color: var(--green); }
+  .stock-summary-card .ssc-record-volume {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-left: 8px;
+  }
+  .stock-summary-card .ssc-record-analysis {
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 4px;
+  }
+
   #historyView .history-header {
     display: flex;
     align-items: center;
@@ -1373,6 +1429,17 @@
     cursor: pointer;
   }
   #historyDetailModal .detail-close:hover { color: var(--text); }
+  #historyDetailModal .detail-screenshot-btn {
+    position: absolute;
+    top: 12px;
+    right: 50px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  #historyDetailModal .detail-screenshot-btn:hover { color: var(--text); }
   #historyDetailModal .detail-date {
     font-size: 20px;
     font-weight: 700;
@@ -1561,6 +1628,22 @@
   <div class="history-list" id="historyList"></div>
 </div>
 
+<!-- 个股视图 -->
+<div id="stockView">
+  <div class="history-header">
+    <h2>📈 个股复盘记录</h2>
+    <div class="history-filter">
+      <span style="color:var(--text-dim);font-size:13px">搜索：</span>
+      <input type="text" id="stockSearchInput" placeholder="输入个股名称" oninput="renderStockView()" style="background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:14px;font-family:inherit;outline:none;width:140px">
+      <button class="btn btn-ghost btn-sm" onclick="clearStockSearch()">清除</button>
+    </div>
+    <div class="history-actions">
+      <button class="btn btn-ghost btn-sm" onclick="rebuildAndRenderStockView()" title="从历史数据全量重建">🔄 刷新</button>
+    </div>
+  </div>
+  <div class="history-list" id="stockList"></div>
+</div>
+
 <!-- 历史详情弹窗 -->
 <div id="historyDetailModal">
   <div class="detail-panel" id="historyDetailPanel"></div>
@@ -1575,6 +1658,10 @@
   <button class="menu-btn" data-tab="history" onclick="switchTab('history')">
     <span class="menu-icon">📋</span>
     <span>历史</span>
+  </button>
+  <button class="menu-btn" data-tab="stock" onclick="switchTab('stock')">
+    <span class="menu-icon">📈</span>
+    <span>个股</span>
   </button>
 </div>
 
@@ -1672,9 +1759,13 @@ function isWeekend(dateStr) {
 function displayDates() {
   const today = todayStr();
   const set = new Set();
-  // 纳入已���数据的日期（跳过周末）
+  // 只有活跃市值已填的日期才纳入表格列
   Object.keys(store).forEach(k => {
-    if (!isWeekend(k)) set.add(k);
+    if (isWeekend(k)) return;
+    const day = store[k] || {};
+    if (day.activeMv != null && day.activeMv !== '') {
+      set.add(k);
+    }
   });
   // 自定义日期（用户点击标题修改后）强制纳入
   if (window.__customTitleDate && !isWeekend(window.__customTitleDate)) {
@@ -1689,6 +1780,27 @@ function displayDates() {
     set.add(lastTradingDayBefore(today));
   }
   return Array.from(set).sort((a,b) => a < b ? 1 : -1).slice(0, 7);
+}
+/* 清理空日期：活跃市值未填且无实际数据的日期从 store 中删除 */
+function cleanupEmptyDays() {
+  let changed = false;
+  Object.keys(store).forEach(k => {
+    const day = store[k] || {};
+    if (day.activeMv != null && day.activeMv !== '') return; // 活跃市值已填，保留
+    const hasFundData = (arr) => Array.isArray(arr) && arr.some(x => x && (x.name || x.amt != null || x.pct != null));
+    const f = day.fund || {}, f2 = day.fund2 || {}, f3 = day.fund3 || {};
+    const hasData = hasFundData(f.in) || hasFundData(f.out) ||
+                     hasFundData(f2.in) || hasFundData(f2.out) ||
+                     hasFundData(f3.in) || hasFundData(f3.out) ||
+                     (day.thought && day.thought.trim()) ||
+                     (day.stocks && day.stocks.length > 0) ||
+                     (day.mindsets && day.mindsets.some(m => m.pl || m.stageThought || m.noiseThought || m.psychThought));
+    if (!hasData) {
+      delete store[k];
+      changed = true;
+    }
+  });
+  if (changed) saveStore(store);
 }
 /* 判断当前北京时间是否已过 15:01 */
 function isAfterMarketClose() {
@@ -1713,6 +1825,8 @@ function lastTradingDayBefore(dateStr) {
    择时模块
    ========================= */
 let store = loadStore();
+// 启动时清理空日期（活跃市值未填且无实际数据的）
+cleanupEmptyDays();
 
 /* 新交易日初始化：15:01 后自动初始化当天数据，但模块三(fund2)和模块四(fund3)不受影响，保持已有数据 */
 (function initNewTradingDay() {
@@ -3354,23 +3468,30 @@ function saveHistory(arr) {
 function switchTab(tab) {
   const mainView = document.getElementById('mainView');
   const historyView = document.getElementById('historyView');
+  const stockView = document.getElementById('stockView');
   const exportBtn = document.getElementById('exportBtn');
   const saveBtn = document.getElementById('saveBtn');
   const bottomBtns = document.querySelectorAll('#bottomBar .menu-btn');
 
   bottomBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  // 隐藏所有视图
+  mainView.classList.remove('hide');
+  historyView.classList.remove('show');
+  if (stockView) stockView.classList.remove('show');
+  exportBtn.style.display = 'none';
+  saveBtn.style.display = 'none';
 
   if (tab === 'review') {
-    mainView.classList.remove('hide');
-    historyView.classList.remove('show');
     exportBtn.style.display = '';
     saveBtn.style.display = '';
-  } else {
+  } else if (tab === 'history') {
     mainView.classList.add('hide');
     historyView.classList.add('show');
-    exportBtn.style.display = 'none';
-    saveBtn.style.display = 'none';
     renderHistoryList();
+  } else if (tab === 'stock') {
+    mainView.classList.add('hide');
+    if (stockView) stockView.classList.add('show');
+    renderStockView();
   }
 }
 
@@ -3554,6 +3675,96 @@ function restoreIndexCardDisplay(card) {
   }
 }
 
+/* =========================
+   个股复盘记录汇总
+   ========================= */
+const STOCK_KEY = 'stock_review_stocks';
+function loadStockSummary() {
+  try { return JSON.parse(localStorage.getItem(STOCK_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveStockSummary(arr) {
+  localStorage.setItem(STOCK_KEY, JSON.stringify(arr));
+}
+/* 全量重建：遍历所有历史快照，按个股名汇总 */
+function rebuildStockSummary() {
+  const history = loadHistory();
+  const map = {};
+  history.forEach(h => {
+    if (!h.stocks) return;
+    h.stocks.forEach(s => {
+      if (!s.name) return;
+      if (!map[s.name]) map[s.name] = [];
+      map[s.name].push({
+        date: h.date,
+        change: s.change,
+        volume: s.volume || '',
+        analysis: s.analysis || ''
+      });
+    });
+  });
+  const arr = Object.keys(map).map(name => ({
+    name,
+    records: map[name].sort((a,b) => a.date < b.date ? 1 : -1)
+  }));
+  arr.sort((a,b) => b.records.length - a.records.length);
+  saveStockSummary(arr);
+  return arr;
+}
+function rebuildAndRenderStockView() {
+  rebuildStockSummary();
+  renderStockView();
+  toast('个股数据已刷新 ✓');
+}
+function clearStockSearch() {
+  const input = document.getElementById('stockSearchInput');
+  if (input) input.value = '';
+  renderStockView();
+}
+function renderStockView() {
+  const container = document.getElementById('stockList');
+  if (!container) return;
+  let data = loadStockSummary();
+  // 搜索过滤
+  const searchInput = document.getElementById('stockSearchInput');
+  const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  if (keyword) {
+    data = data.filter(s => s.name.toLowerCase().includes(keyword));
+  }
+  if (data.length === 0) {
+    container.innerHTML = `<div class="history-empty" style="text-align:center;padding:40px 20px;color:var(--text-dim)">
+      <span class="empty-icon" style="font-size:48px;display:block;margin-bottom:12px">📈</span>
+      <p>${keyword ? '未找到匹配的个股' : '暂无个股复盘记录'}</p>
+      <p style="font-size:12px;margin-top:4px">${keyword ? '试试其他关键词' : '点击右上角刷新按钮从历史数据重建'}</p>
+    </div>`;
+    return;
+  }
+  container.innerHTML = data.map((s, i) => {
+    const recordsHtml = s.records.map(r => {
+      const changeVal = r.change != null ? r.change : null;
+      const changeHtml = changeVal != null
+        ? `<span class="ssc-record-change ${changeVal >= 0 ? 'up' : 'down'}">${changeVal >= 0 ? '+' : ''}${changeVal.toFixed(2)}%</span>`
+        : '<span class="ssc-record-change" style="color:var(--text-dim)">—</span>';
+      const volHtml = r.volume ? `<span class="ssc-record-volume">${escapeHtml(r.volume)}</span>` : '';
+      const analysisHtml = r.analysis ? `<div class="ssc-record-analysis">${escapeHtml(r.analysis)}</div>` : '';
+      return `<div class="ssc-record">
+        <div class="ssc-record-date">${fmtMonthDay(r.date)} | ${changeHtml}${volHtml}</div>
+        ${analysisHtml}
+      </div>`;
+    }).join('');
+    return `<div class="stock-summary-card" onclick="toggleStockCard(this)">
+      <div class="ssc-header">
+        <span class="ssc-name">${escapeHtml(s.name)}</span>
+        <span class="ssc-count">${s.records.length} 条记录</span>
+      </div>
+      <div class="ssc-records">${recordsHtml}</div>
+    </div>`;
+  }).join('');
+}
+function toggleStockCard(el) {
+  el.classList.toggle('expanded');
+}
+
 /* 获取当前页面指数数据 */
 function getIndexSnapshot() {
   const cards = document.querySelectorAll('#indexGrid .index-card');
@@ -3621,6 +3832,7 @@ function saveReviewSnapshot() {
   // 最多保留 90 条
   if (history.length > 90) history = history.slice(0, 90);
   saveHistory(history);
+  cleanupEmptyDays();
   toast('复盘已保存 ✓');
 }
 
@@ -3832,7 +4044,7 @@ function viewHistoryDetail(idx, evt) {
   const panel = document.getElementById('historyDetailPanel');
   const breadth = h.breadth || { up: '', flat: '', down: '' };
 
-  let html = `<button class="detail-close" onclick="closeHistoryDetail()">✕</button>`;
+  let html = `<button class="detail-screenshot-btn" onclick="screenshotHistoryDetail()" title="截图">📷</button><button class="detail-close" onclick="closeHistoryDetail()">✕</button>`;
   html += `<div class="detail-date">📅 ${fmtMonthDay(h.date)} 复盘记录</div>`;
 
   // ===== 一、择时 =====
@@ -3921,6 +4133,51 @@ function viewHistoryDetail(idx, evt) {
 
 function closeHistoryDetail() {
   document.getElementById('historyDetailModal').classList.remove('show');
+}
+
+/* 截图历史详情弹窗 */
+function screenshotHistoryDetail() {
+  const panel = document.getElementById('historyDetailPanel');
+  if (!panel) return;
+  const closeBtn = panel.querySelector('.detail-close');
+  const shotBtn = panel.querySelector('.detail-screenshot-btn');
+  const closeDisp = closeBtn ? closeBtn.style.display : '';
+  const shotDisp = shotBtn ? shotBtn.style.display : '';
+  if (closeBtn) closeBtn.style.display = 'none';
+  if (shotBtn) shotBtn.style.display = 'none';
+
+  if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
+  html2canvas(panel, {
+    backgroundColor: '#1a2029',
+    scale: Math.min(2, window.devicePixelRatio || 1),
+    useCORS: true,
+    logging: false
+  }).then(canvas => {
+    if (closeBtn) closeBtn.style.display = closeDisp;
+    if (shotBtn) shotBtn.style.display = shotDisp;
+    const dateEl = panel.querySelector('.detail-date');
+    const dateText = dateEl ? dateEl.textContent.replace(/[^\d月日]/g, '') : '';
+    const fname = '复盘详情_' + dateText + '.png';
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], fname, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: '复盘详情', text: fname }).catch(() => {});
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
+    }, 'image/png');
+  }).catch(err => {
+    if (closeBtn) closeBtn.style.display = closeDisp;
+    if (shotBtn) shotBtn.style.display = shotDisp;
+    centerAlert('截图失败：' + (err && err.message ? err.message : err));
+  });
 }
 
 function renderHistoryFundTable(title, fundData, kind) {
@@ -4092,8 +4349,30 @@ function editTitleDate() {
       saveStore(store);
       toast('已加载 ' + fmtMonthDay(newDate) + ' 的历史复盘数据');
     } else {
-      // 无历史数据：清空指数卡片
+      // 无历史数据：清空指数卡片，从最近的历史记录复制模块三、四数据
       clearIndexCards();
+      // 找离 newDate 最近的历史记录（可前可后，取日期差绝对值最小的；差值相等取前一天）
+      let nearestSnap = null;
+      let minDiff = Infinity;
+      const newDateTime = new Date(newDate + 'T00:00:00').getTime();
+      history.forEach(h => {
+        const diff = Math.abs(new Date(h.date + 'T00:00:00').getTime() - newDateTime);
+        if (diff < minDiff || (diff === minDiff && h.date < newDate)) {
+          minDiff = diff;
+          nearestSnap = h;
+        }
+      });
+      if (nearestSnap) {
+        if (!store[newDate]) store[newDate] = {};
+        store[newDate].fund2 = JSON.parse(JSON.stringify(nearestSnap.fund2 || { in: [], out: [] }));
+        store[newDate].fund3 = JSON.parse(JSON.stringify(nearestSnap.fund3 || { in: [], out: [] }));
+        store[newDate].mindsets = (nearestSnap.mindsets || []).map(m => ({
+          date: m.date || '', pl: m.pl || '',
+          stageThought: m.stage || '', noiseThought: m.noise || '', psychThought: m.psych || ''
+        }));
+        saveStore(store);
+        toast('已从 ' + fmtMonthDay(nearestSnap.date) + ' 复制模块三、四数据');
+      }
     }
 
     // 历史日期：隐藏刷新按钮，启用指数编辑模式
