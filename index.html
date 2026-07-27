@@ -2478,6 +2478,55 @@ function stopAutoRefresh() {
   if (indexRefreshTimer) { clearInterval(indexRefreshTimer); indexRefreshTimer = null; }
 }
 
+/* 获取指定历史交易日的指数盘后数据
+   使用腾讯日K接口：https://web.ifzq.gtimg.cn/appstock/app/fqkline/get
+   返回 Promise，resolve 时传入 indexData 数组（与历史快照格式一致） */
+function fetchHistoryIndexData(dateStr) {
+  // 多取1天用于计算涨跌额/涨跌幅（对比前一日收盘价）
+  const d = new Date(dateStr + 'T00:00:00');
+  const dBefore = new Date(d.getTime() - 14 * 24 * 60 * 60 * 1000); // 向前14天确保覆盖周末
+  const fmt = (x) => x.getFullYear() + String(x.getMonth()+1).padStart(2,'0') + String(x.getDate()).padStart(2,'0');
+
+  const promises = INDEX_CODES.map(code => {
+    const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${code},day,${fmt(dBefore)},${dateStr},30,qfq`;
+    return fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      .then(r => r.json())
+      .then(d => {
+        const arr = (d.data && d.data[code] && d.data[code].day) || [];
+        if (arr.length === 0) return null;
+        // 找到目标日期的数据
+        const target = arr.find(row => row[0] === dateStr);
+        if (!target) return null;
+        // target: [日期, 开盘, 收盘, 最高, 最低, 成交量]
+        const close = parseFloat(target[2]);
+        // 找前一交易日
+        const idx = arr.indexOf(target);
+        let prevClose = '';
+        if (idx > 0) prevClose = parseFloat(arr[idx-1][2]);
+        let changeAmt = '', changePct = '';
+        if (prevClose && !isNaN(prevClose) && !isNaN(close)) {
+          changeAmt = close - prevClose;
+          changePct = (changeAmt / prevClose * 100);
+        }
+        const name = code === 'sh000001' ? '上证指数' :
+                     code === 'sz399001' ? '深证成指' : '创业板指';
+        const sign = changePct >= 0 ? '+' : '';
+        const raw = changePct !== '' ? `${sign}${changePct.toFixed(2)}% (${sign}${changeAmt.toFixed(2)})` : '—';
+        return {
+          code,
+          name,
+          price: isNaN(close) ? '—' : close.toFixed(2),
+          pct: changePct === '' ? '' : changePct.toFixed(2),
+          amt: changeAmt === '' ? '' : changeAmt.toFixed(2),
+          raw: raw
+        };
+      })
+      .catch(() => null);
+  });
+
+  return Promise.all(promises).then(results => results.filter(r => r !== null));
+}
+
 /* =========================
    资金模块 - 纯手动录入
    fund: { "2026-07-26": { in: [{name,amt}...6], out: [{name,amt}...6] }, ... }
@@ -3903,10 +3952,17 @@ function editTitleDate() {
       saveStore(store);
       toast('已加载 ' + fmtMonthDay(newDate) + ' 的历史复盘数据');
     } else {
-      // 无历史数据：清空指数卡片并自动从网络获取该交易日指数
+      // 无历史数据：清空指数卡片并自动从网络获取该交易日的盘后指数数据
       clearIndexCards();
-      fetchIndexData();
-      toast('指数已刷新');
+      toast('正在获取 ' + fmtMonthDay(newDate) + ' 指数数据...');
+      fetchHistoryIndexData(newDate).then(indexData => {
+        if (indexData && indexData.length > 0) {
+          renderIndexCards(indexData);
+          toast('指数已刷新 ✓');
+        } else {
+          toast('未获取到 ' + fmtMonthDay(newDate) + ' 的指数数据');
+        }
+      });
     }
 
     // 重新渲染所有模块
