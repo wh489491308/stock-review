@@ -590,6 +590,53 @@
     .index-card .index-price { font-size: 13px; }
     .index-card .index-change { font-size: 9px; }
   }
+  /* 指数编辑模式：历史日期时可点击编辑 */
+  .index-card.editable {
+    cursor: pointer;
+    border-style: dashed;
+    border-color: var(--blue);
+  }
+  .index-card.editable:hover {
+    background: var(--panel);
+  }
+  /* 编辑态输入框：背景/字号与显示态一致 */
+  .index-card .index-edit-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--blue);
+    color: var(--text);
+    font-family: inherit;
+    font-weight: inherit;
+    text-align: center;
+    outline: none;
+    width: 100%;
+    max-width: 80px;
+    padding: 0;
+    margin: 1px 0;
+  }
+  .index-card .index-edit-input.index-edit-price {
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .index-card .index-edit-input.index-edit-pct,
+  .index-card .index-edit-input.index-edit-amt {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    display: inline-block;
+    width: 45%;
+    max-width: 60px;
+  }
+  .index-card .index-edit-pct::after {
+    content: '%';
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  @media (max-width: 600px) {
+    .index-card .index-edit-input.index-edit-price { font-size: 13px; }
+    .index-card .index-edit-input.index-edit-pct,
+    .index-card .index-edit-input.index-edit-amt { font-size: 9px; }
+  }
   .market-breadth {
     margin-top: 8px;
     font-size: 14px;
@@ -1391,6 +1438,7 @@
   <div class="index-section">
     <div class="index-header">
       <label>板块指数：</label>
+      <button class="btn btn-sm btn-ghost" id="refreshIndexBtn" onclick="fetchIndexData()">🔄 刷新</button>
     </div>
     <div class="index-grid" id="indexGrid">
       <div class="index-card" data-code="sh000001">
@@ -1565,6 +1613,21 @@
       <button class="btn btn-ghost btn-sm" onclick="closeBatchModal()">取消</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="clearBatchText()">清空文本</button>
       <button class="btn btn-sm" onclick="saveBatch()">填入表格</button>
+    </div>
+  </div>
+</div>
+
+<!-- 盈亏输入弹层 -->
+<div class="modal-mask" id="plModal">
+  <div class="modal">
+    <h3>输入盈亏</h3>
+    <div class="field">
+      <input type="text" id="plInput" autocomplete="off" placeholder="如：今日赚500 / 今日亏200">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closePlModal()">取消</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="clearPlInput()">清空</button>
+      <button class="btn btn-sm" onclick="savePlInput()">保存</button>
     </div>
   </div>
 </div>
@@ -2234,31 +2297,38 @@ function editMindsetDate(index) {
   // 已移除日期编辑功能
 }
 
+/* 盈亏编辑：弹窗输入 */
+let __plEditingIndex = -1;
 function editMindsetPl(index) {
   const mindsets = getMindsetData();
-  const display = document.getElementById('mindsetPlDisplay_' + index);
-  if (!display) return;
+  __plEditingIndex = index;
   const currentVal = mindsets[index].pl || '';
-  display.style.display = 'none';
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'mindset-pl-input-big';
+  const input = document.getElementById('plInput');
   input.value = currentVal;
-  input.placeholder = '如 今日赚';
-  display.parentNode.insertBefore(input, display.nextSibling);
-  input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
-  input.onblur = () => {
-    const v = input.value.trim();
-    mindsets[index].pl = v;
-    saveStore(store);
-    renderMindsetCards();
-  };
-  input.onkeydown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-    else if (e.key === 'Escape') { input.blur(); }
-  };
+  document.getElementById('plModal').classList.add('show');
+  setTimeout(() => { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 100);
 }
+function closePlModal() {
+  document.getElementById('plModal').classList.remove('show');
+  __plEditingIndex = -1;
+}
+function clearPlInput() {
+  document.getElementById('plInput').value = '';
+}
+function savePlInput() {
+  if (__plEditingIndex < 0) { closePlModal(); return; }
+  const v = document.getElementById('plInput').value.trim();
+  const mindsets = getMindsetData();
+  mindsets[__plEditingIndex].pl = v;
+  saveStore(store);
+  closePlModal();
+  renderMindsetCards();
+}
+// 盈亏弹窗回车保存
+document.getElementById('plInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); savePlInput(); }
+  else if (e.key === 'Escape') { e.preventDefault(); closePlModal(); }
+});
 
 function renderMindsetThought(index, field, containerId, txt) {
   const container = document.getElementById(containerId);
@@ -2341,7 +2411,6 @@ function renderMindsetCards() {
    大盘指数数据（腾讯JSONP 指数行情 + 东方财富 clist 全A涨跌家数）
    ========================= */
 const INDEX_CODES = ['sh000001', 'sz399001', 'sz399006'];
-let indexRefreshTimer = null;
 
 function fetchIndexData() {
   fetchIndexViaTencent();
@@ -2349,6 +2418,8 @@ function fetchIndexData() {
 
 /* 腾讯接口：用 <script charset="gbk"> JSONP 方式加载 */
 function fetchIndexViaTencent() {
+  const btn = document.getElementById('refreshIndexBtn');
+  if (btn) { btn.textContent = '⏳ 加载中...'; btn.disabled = true; }
   // 清除旧数据
   window.__indexCallback = function() {
     INDEX_CODES.forEach(code => {
@@ -2367,6 +2438,9 @@ function fetchIndexViaTencent() {
       const low = parseFloat(parts[34]);
       updateIndexCard(code, name, price, changeAmt, changePct, high, low);
     });
+    const btn = document.getElementById('refreshIndexBtn');
+    if (btn) { btn.textContent = '🔄 刷新'; btn.disabled = false; }
+    toast('指数已刷新 ✓');
   };
   const url = 'https://qt.gtimg.cn/q=' + INDEX_CODES.join(',');
   const oldScript = document.getElementById('indexScript');
@@ -2376,7 +2450,9 @@ function fetchIndexViaTencent() {
   script.charset = 'gbk';
   script.src = url + '&t=' + Date.now();  // 加时间戳防缓存
   script.onerror = function() {
-    // 静默失败，不再更新按钮文字
+    const btn = document.getElementById('refreshIndexBtn');
+    if (btn) { btn.textContent = '🔄 刷新'; btn.disabled = false; }
+    toast('指数刷新失败，请重试');
   };
   script.onload = function() {
     if (window.__indexCallback) window.__indexCallback();
@@ -2468,64 +2544,7 @@ document.addEventListener('mousedown', (e) => {
   if (el && !el.contains(e.target)) commitBreadth();
 });
 
-/* 自动刷新：每15分钟 */
-function startAutoRefresh() {
-  stopAutoRefresh();
-  fetchIndexData();
-  indexRefreshTimer = setInterval(fetchIndexData, 15 * 60 * 1000);
-}
-function stopAutoRefresh() {
-  if (indexRefreshTimer) { clearInterval(indexRefreshTimer); indexRefreshTimer = null; }
-}
-
-/* 获取指定历史交易日的指数盘后数据
-   使用腾讯日K接口：https://web.ifzq.gtimg.cn/appstock/app/fqkline/get
-   返回 Promise，resolve 时传入 indexData 数组（与历史快照格式一致） */
-function fetchHistoryIndexData(dateStr) {
-  // 多取1天用于计算涨跌额/涨跌幅（对比前一日收盘价）
-  const d = new Date(dateStr + 'T00:00:00');
-  const dBefore = new Date(d.getTime() - 14 * 24 * 60 * 60 * 1000); // 向前14天确保覆盖周末
-  const fmt = (x) => x.getFullYear() + String(x.getMonth()+1).padStart(2,'0') + String(x.getDate()).padStart(2,'0');
-
-  const promises = INDEX_CODES.map(code => {
-    const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${code},day,${fmt(dBefore)},${dateStr},30,qfq`;
-    return fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
-      .then(r => r.json())
-      .then(d => {
-        const arr = (d.data && d.data[code] && d.data[code].day) || [];
-        if (arr.length === 0) return null;
-        // 找到目标日期的数据
-        const target = arr.find(row => row[0] === dateStr);
-        if (!target) return null;
-        // target: [日期, 开盘, 收盘, 最高, 最低, 成交量]
-        const close = parseFloat(target[2]);
-        // 找前一交易日
-        const idx = arr.indexOf(target);
-        let prevClose = '';
-        if (idx > 0) prevClose = parseFloat(arr[idx-1][2]);
-        let changeAmt = '', changePct = '';
-        if (prevClose && !isNaN(prevClose) && !isNaN(close)) {
-          changeAmt = close - prevClose;
-          changePct = (changeAmt / prevClose * 100);
-        }
-        const name = code === 'sh000001' ? '上证指数' :
-                     code === 'sz399001' ? '深证成指' : '创业板指';
-        const sign = changePct >= 0 ? '+' : '';
-        const raw = changePct !== '' ? `${sign}${changePct.toFixed(2)}% (${sign}${changeAmt.toFixed(2)})` : '—';
-        return {
-          code,
-          name,
-          price: isNaN(close) ? '—' : close.toFixed(2),
-          pct: changePct === '' ? '' : changePct.toFixed(2),
-          amt: changeAmt === '' ? '' : changeAmt.toFixed(2),
-          raw: raw
-        };
-      })
-      .catch(() => null);
-  });
-
-  return Promise.all(promises).then(results => results.filter(r => r !== null));
-}
+/* 手动刷新：不再自动刷新，由用户点击按钮触发 */
 
 /* =========================
    资金模块 - 纯手动录入
@@ -3165,8 +3184,8 @@ renderFundTable();
 renderFundTable2();
 renderFundTable3();
 renderMindsetCards();
-// 启动大盘指数自动刷新
-startAutoRefresh();
+// 初始加载今日指数数据（手动刷新模式，不自动刷新）
+fetchIndexData();
 
 // 窗口尺寸变化时重新自适应字号（非全屏态；全屏态由 fitFsTable 处理）
 window.addEventListener('resize', () => {
@@ -3412,6 +3431,152 @@ function clearIndexCards() {
     card.querySelector('.index-change').textContent = '—';
     card.classList.remove('up', 'down', 'flat');
   });
+}
+
+/* 判断是否为历史日期（非今天且非未来，且是交易日） */
+function isHistoricalDate(dateStr) {
+  const today = todayStr();
+  return dateStr < today && !isWeekend(dateStr);
+}
+
+/* 指数编辑模式：历史日期时，点击指数卡片可编辑三个数值 */
+function enableIndexEditMode() {
+  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
+    card.classList.add('editable');
+    card.onclick = function() { editIndexCard(this); };
+  });
+}
+
+/* 退出指数编辑模式 */
+function disableIndexEditMode() {
+  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
+    card.classList.remove('editable');
+    card.onclick = null;
+  });
+}
+
+/* 编辑单个指数卡片：三个输入框（价格、涨跌幅%、涨跌点数） */
+function editIndexCard(card) {
+  if (card.querySelector('input')) return; // 已在编辑中
+  const code = card.dataset.code;
+  const nameEl = card.querySelector('.index-name');
+  const priceEl = card.querySelector('.index-price');
+  const changeEl = card.querySelector('.index-change');
+
+  const name = nameEl.textContent.trim();
+  const priceText = priceEl.textContent.trim();
+  const changeText = changeEl.textContent.trim();
+
+  // 解析现有值
+  let priceVal = (priceText === '—') ? '' : priceText;
+  let pctVal = '', amtVal = '';
+  const m = changeText.match(/^([+-]?[\d.]+)%\s*\(([+-]?[\d.]+)\)$/);
+  if (m) { pctVal = m[1]; amtVal = m[2]; }
+
+  // 保存到 dataset
+  card.dataset.editName = name;
+  card.dataset.editPrice = priceVal;
+  card.dataset.editPct = pctVal;
+  card.dataset.editAmt = amtVal;
+
+  // 替换为输入框
+  card.innerHTML =
+    `<div class="index-name">${escapeHtml(name)}</div>` +
+    `<input class="index-edit-input index-edit-price" type="text" inputmode="decimal" value="${escapeAttr(priceVal)}" placeholder="价格" data-field="price">` +
+    `<input class="index-edit-input index-edit-pct" type="text" inputmode="decimal" value="${escapeAttr(pctVal)}" placeholder="涨跌幅" data-field="pct">%` +
+    `<input class="index-edit-input index-edit-amt" type="text" inputmode="decimal" value="${escapeAttr(amtVal)}" placeholder="涨跌点" data-field="amt">`;
+
+  const inputs = card.querySelectorAll('input');
+  inputs.forEach(inp => {
+    inp.focus();
+    inp.setSelectionRange(inp.value.length, inp.value.length);
+    inp.addEventListener('blur', () => {
+      // 所有输入框都失去焦点时保存
+      setTimeout(() => {
+        if (!card.querySelector('input:focus')) saveIndexCardEdit(card);
+      }, 100);
+    });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); restoreIndexCardDisplay(card); }
+    });
+  });
+  inputs[0].focus();
+  inputs[0].select();
+}
+
+/* 保存指数卡片编辑 */
+function saveIndexCardEdit(card) {
+  const code = card.dataset.code;
+  const name = card.dataset.editName || (code === 'sh000001' ? '上证指数' : code === 'sz399001' ? '深证成指' : '创业板指');
+  const priceInput = card.querySelector('input[data-field="price"]');
+  const pctInput = card.querySelector('input[data-field="pct"]');
+  const amtInput = card.querySelector('input[data-field="amt"]');
+
+  const priceVal = priceInput ? priceInput.value.trim() : '';
+  const pctVal = pctInput ? pctInput.value.trim() : '';
+  const amtVal = amtInput ? amtInput.value.trim() : '';
+
+  // 构建显示文本
+  const priceDisplay = priceVal === '' ? '—' : priceVal;
+  let changeDisplay = '—';
+  if (pctVal !== '' || amtVal !== '') {
+    const p = pctVal !== '' ? pctVal : '0';
+    const a = amtVal !== '' ? amtVal : '0';
+    const pSign = parseFloat(p) >= 0 ? '+' : '';
+    const aSign = parseFloat(a) >= 0 ? '+' : '';
+    changeDisplay = `${pSign}${p}% (${aSign}${a})`;
+  }
+
+  // 恢复显示
+  card.innerHTML =
+    `<div class="index-name">${escapeHtml(name)}</div>` +
+    `<div class="index-price">${escapeHtml(priceDisplay)}</div>` +
+    `<div class="index-change">${escapeHtml(changeDisplay)}</div>`;
+
+  // 涨跌颜色
+  card.classList.remove('up', 'down', 'flat');
+  const pctNum = parseFloat(pctVal);
+  if (!isNaN(pctNum)) {
+    if (pctNum > 0) card.classList.add('up');
+    else if (pctNum < 0) card.classList.add('down');
+    else card.classList.add('flat');
+  } else {
+    card.classList.add('flat');
+  }
+}
+
+/* 恢复指数卡片显示态（取消编辑） */
+function restoreIndexCardDisplay(card) {
+  const code = card.dataset.code;
+  const name = card.dataset.editName || (code === 'sh000001' ? '上证指数' : code === 'sz399001' ? '深证成指' : '创业板指');
+  const priceVal = card.dataset.editPrice || '—';
+  const pctVal = card.dataset.editPct || '';
+  const amtVal = card.dataset.editAmt || '';
+
+  let changeDisplay = '—';
+  if (pctVal !== '' || amtVal !== '') {
+    const p = pctVal !== '' ? pctVal : '0';
+    const a = amtVal !== '' ? amtVal : '0';
+    const pSign = parseFloat(p) >= 0 ? '+' : '';
+    const aSign = parseFloat(a) >= 0 ? '+' : '';
+    changeDisplay = `${pSign}${p}% (${aSign}${a})`;
+  }
+
+  card.innerHTML =
+    `<div class="index-name">${escapeHtml(name)}</div>` +
+    `<div class="index-price">${escapeHtml(priceVal === '' ? '—' : priceVal)}</div>` +
+    `<div class="index-change">${escapeHtml(changeDisplay)}</div>`;
+
+  card.classList.remove('up', 'down', 'flat');
+  const pctNum = parseFloat(pctVal);
+  if (!isNaN(pctNum)) {
+    if (pctNum > 0) card.classList.add('up');
+    else if (pctNum < 0) card.classList.add('down');
+    else card.classList.add('flat');
+  } else {
+    card.classList.add('flat');
+  }
 }
 
 /* 获取当前页面指数数据 */
@@ -3952,17 +4117,19 @@ function editTitleDate() {
       saveStore(store);
       toast('已加载 ' + fmtMonthDay(newDate) + ' 的历史复盘数据');
     } else {
-      // 无历史数据：清空指数卡片并自动从网络获取该交易日的盘后指数数据
+      // 无历史数据：清空指数卡片
       clearIndexCards();
-      toast('正在获取 ' + fmtMonthDay(newDate) + ' 指数数据...');
-      fetchHistoryIndexData(newDate).then(indexData => {
-        if (indexData && indexData.length > 0) {
-          renderIndexCards(indexData);
-          toast('指数已刷新 ✓');
-        } else {
-          toast('未获取到 ' + fmtMonthDay(newDate) + ' 的指数数据');
-        }
-      });
+    }
+
+    // 历史日期：隐藏刷新按钮，启用指数编辑模式
+    // 今天/最近交易日：显示刷新按钮，禁用编辑模式
+    const refreshBtn = document.getElementById('refreshIndexBtn');
+    if (isHistoricalDate(newDate)) {
+      if (refreshBtn) refreshBtn.style.display = 'none';
+      enableIndexEditMode();
+    } else {
+      if (refreshBtn) refreshBtn.style.display = '';
+      disableIndexEditMode();
     }
 
     // 重新渲染所有模块
