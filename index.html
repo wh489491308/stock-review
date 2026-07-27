@@ -1613,16 +1613,18 @@
 <!-- 历史视图 -->
 <div id="historyView">
   <div class="history-header">
-    <h2>📋 历史复盘记录</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%">
+      <h2>📋 历史复盘记录</h2>
+      <div class="history-actions">
+        <button class="btn btn-ghost btn-sm" onclick="exportBackup()">💾 备份</button>
+        <button class="btn btn-ghost btn-sm" onclick="importBackup()">📂 导入</button>
+        <input type="file" id="importFileInput" accept=".json,application/json" style="display:none">
+      </div>
+    </div>
     <div class="history-filter">
       <span style="color:var(--text-dim);font-size:13px">筛选日期：</span>
       <input type="date" id="historyDateFilter" onchange="renderHistoryList()">
       <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">清除</button>
-    </div>
-    <div class="history-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportBackup()">💾 数据备份</button>
-      <button class="btn btn-ghost btn-sm" onclick="importBackup()">📂 数据导入</button>
-      <input type="file" id="importFileInput" accept=".json,application/json" style="display:none">
     </div>
   </div>
   <div class="history-list" id="historyList"></div>
@@ -1631,14 +1633,16 @@
 <!-- 个股视图 -->
 <div id="stockView">
   <div class="history-header">
-    <h2>📈 个股复盘记录</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%">
+      <h2>📈 个股复盘记录</h2>
+      <div class="history-actions">
+        <button class="btn btn-ghost btn-sm" onclick="rebuildAndRenderStockView()" title="从历史数据全量重建">🔄 刷新</button>
+      </div>
+    </div>
     <div class="history-filter">
       <span style="color:var(--text-dim);font-size:13px">搜索：</span>
       <input type="text" id="stockSearchInput" placeholder="输入个股名称" oninput="renderStockView()" style="background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:14px;font-family:inherit;outline:none;width:140px">
       <button class="btn btn-ghost btn-sm" onclick="clearStockSearch()">清除</button>
-    </div>
-    <div class="history-actions">
-      <button class="btn btn-ghost btn-sm" onclick="rebuildAndRenderStockView()" title="从历史数据全量重建">🔄 刷新</button>
     </div>
   </div>
   <div class="history-list" id="stockList"></div>
@@ -4139,6 +4143,7 @@ function closeHistoryDetail() {
 function screenshotHistoryDetail() {
   const panel = document.getElementById('historyDetailPanel');
   if (!panel) return;
+  const modal = document.getElementById('historyDetailModal');
   const closeBtn = panel.querySelector('.detail-close');
   const shotBtn = panel.querySelector('.detail-screenshot-btn');
   const closeDisp = closeBtn ? closeBtn.style.display : '';
@@ -4146,15 +4151,30 @@ function screenshotHistoryDetail() {
   if (closeBtn) closeBtn.style.display = 'none';
   if (shotBtn) shotBtn.style.display = 'none';
 
+  // 临时移除高度限制和滚动，确保截取完整长图
+  const panelMaxH = panel.style.maxHeight;
+  const panelOverflow = panel.style.overflow;
+  const modalMaxH = modal ? modal.style.maxHeight : '';
+  const modalOverflow = modal ? modal.style.overflow : '';
+  panel.style.maxHeight = 'none';
+  panel.style.overflow = 'visible';
+  if (modal) { modal.style.maxHeight = 'none'; modal.style.overflow = 'visible'; }
+
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
   html2canvas(panel, {
     backgroundColor: '#1a2029',
     scale: Math.min(2, window.devicePixelRatio || 1),
     useCORS: true,
-    logging: false
+    logging: false,
+    windowHeight: panel.scrollHeight
   }).then(canvas => {
+    // 恢复样式
     if (closeBtn) closeBtn.style.display = closeDisp;
     if (shotBtn) shotBtn.style.display = shotDisp;
+    panel.style.maxHeight = panelMaxH;
+    panel.style.overflow = panelOverflow;
+    if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
+
     const dateEl = panel.querySelector('.detail-date');
     const dateText = dateEl ? dateEl.textContent.replace(/[^\d月日]/g, '') : '';
     const fname = '复盘详情_' + dateText + '.png';
@@ -4174,8 +4194,12 @@ function screenshotHistoryDetail() {
       }
     }, 'image/png');
   }).catch(err => {
+    // 恢复样式
     if (closeBtn) closeBtn.style.display = closeDisp;
     if (shotBtn) shotBtn.style.display = shotDisp;
+    panel.style.maxHeight = panelMaxH;
+    panel.style.overflow = panelOverflow;
+    if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
     centerAlert('截图失败：' + (err && err.message ? err.message : err));
   });
 }
@@ -4349,7 +4373,7 @@ function editTitleDate() {
       saveStore(store);
       toast('已加载 ' + fmtMonthDay(newDate) + ' 的历史复盘数据');
     } else {
-      // 无历史数据：清空指数卡片，从最近的历史记录复制模块三、四数据
+      // 无历史数据：清空指数卡片，从最近的历史记录复制模块三（持仓）和模块四（心态）数据
       clearIndexCards();
       // 找离 newDate 最近的历史记录（可前可后，取日期差绝对值最小的；差值相等取前一天）
       let nearestSnap = null;
@@ -4364,14 +4388,20 @@ function editTitleDate() {
       });
       if (nearestSnap) {
         if (!store[newDate]) store[newDate] = {};
-        store[newDate].fund2 = JSON.parse(JSON.stringify(nearestSnap.fund2 || { in: [], out: [] }));
-        store[newDate].fund3 = JSON.parse(JSON.stringify(nearestSnap.fund3 || { in: [], out: [] }));
+        // 模块三：持仓（stocks）
+        store[newDate].stocks = (nearestSnap.stocks || []).map(s => ({
+          name: s.name || '',
+          change: s.change,
+          volume: s.volume || '',
+          analysis: s.analysis || ''
+        }));
+        // 模块四：心态（mindsets）
         store[newDate].mindsets = (nearestSnap.mindsets || []).map(m => ({
           date: m.date || '', pl: m.pl || '',
           stageThought: m.stage || '', noiseThought: m.noise || '', psychThought: m.psych || ''
         }));
         saveStore(store);
-        toast('已从 ' + fmtMonthDay(nearestSnap.date) + ' 复制模块三、四数据');
+        toast('已从 ' + fmtMonthDay(nearestSnap.date) + ' 复制持仓、心态数据');
       }
     }
 
