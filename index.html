@@ -1133,6 +1133,15 @@
   }
   #historyView .history-filter input:focus { border-color: var(--blue); }
 
+  #historyView .history-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  #historyView .history-actions .btn {
+    white-space: nowrap;
+  }
+
   .history-list { display: flex; flex-direction: column; gap: 12px; }
   .history-card {
     background: var(--panel);
@@ -1494,6 +1503,11 @@
       <span style="color:var(--text-dim);font-size:13px">筛选日期：</span>
       <input type="date" id="historyDateFilter" onchange="renderHistoryList()">
       <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">清除</button>
+    </div>
+    <div class="history-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportBackup()">💾 数据备份</button>
+      <button class="btn btn-ghost btn-sm" onclick="importBackup()">📂 数据导入</button>
+      <input type="file" id="importFileInput" accept=".json,application/json" style="display:none">
     </div>
   </div>
   <div class="history-list" id="historyList"></div>
@@ -3389,6 +3403,102 @@ function saveReviewSnapshot() {
   if (history.length > 90) history = history.slice(0, 90);
   saveHistory(history);
   toast('复盘已保存 ✓');
+}
+
+/* =========================
+   数据备份与导入
+   ========================= */
+function exportBackup() {
+  const backup = {
+    __type: 'stock_review_backup',
+    __version: 1,
+    __exportedAt: new Date().toISOString(),
+    store: loadStore(),
+    history: loadHistory()
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const fname = `复盘数据${fmtMonthDay(new Date())}.json`;
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+
+  const dateCount = Object.keys(backup.store || {}).length;
+  const historyCount = (backup.history || []).length;
+  centerAlert(`✅ 备份成功！\n\n文件名：${fname}\n包含 ${dateCount} 个交易日数据，${historyCount} 条历史记录\n\n请到手机“文件”App 或下载目录查看。`);
+}
+
+function importBackup() {
+  const input = document.getElementById('importFileInput');
+  input.value = '';
+  input.click();
+
+  input.onchange = function() {
+    const file = this.files && this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const backup = JSON.parse(e.target.result);
+
+        if (!backup || backup.__type !== 'stock_review_backup') {
+          centerAlert('❌ 文件格式错误\n\n请选择工作台导出的备份文件（复盘数据X月X日.json）');
+          return;
+        }
+
+        const curStore = loadStore();
+        const curHistory = loadHistory();
+        let mergedDays = 0, mergedHistory = 0;
+
+        // 合并 store：按日期覆盖
+        if (backup.store && typeof backup.store === 'object') {
+          Object.keys(backup.store).forEach(date => {
+            curStore[date] = backup.store[date];
+            mergedDays++;
+          });
+          saveStore(curStore);
+        }
+
+        // 合并 history：按 date 覆盖
+        if (Array.isArray(backup.history)) {
+          backup.history.forEach(item => {
+            const idx = curHistory.findIndex(h => h.date === item.date);
+            if (idx >= 0) {
+              curHistory[idx] = item;
+            } else {
+              curHistory.push(item);
+            }
+          });
+          curHistory.sort((a, b) => a.date < b.date ? 1 : -1);
+          saveHistory(curHistory);
+          mergedHistory = backup.history.length;
+        }
+
+        // 刷新页面
+        store = curStore;
+        renderTiming();
+        renderBreadth();
+        renderFundTable();
+        renderFundTable2();
+        renderFundTable3();
+        renderMindsetCards();
+        if (document.getElementById('historyView').classList.contains('show')) {
+          renderHistoryList();
+        }
+
+        centerAlert(`✅ 导入成功！\n\n文件：${file.name}\n导入 ${mergedDays} 个交易日数据，${mergedHistory} 条历史记录\n\n相同日期的数据已覆盖为文件中的内容`);
+      } catch(err) {
+        centerAlert('❌ 导入失败\n\n文件解析错误：' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
 }
 
 /* 渲染历史列表 */
