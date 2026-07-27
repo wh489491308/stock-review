@@ -1617,21 +1617,6 @@
   </div>
 </div>
 
-<!-- 盈亏输入弹层 -->
-<div class="modal-mask" id="plModal">
-  <div class="modal">
-    <h3>输入盈亏</h3>
-    <div class="field">
-      <input type="text" id="plInput" autocomplete="off" placeholder="如：今日赚500 / 今日亏200">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="closePlModal()">取消</button>
-      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="clearPlInput()">清空</button>
-      <button class="btn btn-sm" onclick="savePlInput()">保存</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2297,38 +2282,31 @@ function editMindsetDate(index) {
   // 已移除日期编辑功能
 }
 
-/* 盈亏编辑：弹窗输入 */
-let __plEditingIndex = -1;
+/* 盈亏编辑：原地输入框 */
 function editMindsetPl(index) {
   const mindsets = getMindsetData();
-  __plEditingIndex = index;
+  const display = document.getElementById('mindsetPlDisplay_' + index);
+  if (!display) return;
   const currentVal = mindsets[index].pl || '';
-  const input = document.getElementById('plInput');
+  display.style.display = 'none';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'mindset-pl-input-big';
   input.value = currentVal;
-  document.getElementById('plModal').classList.add('show');
-  setTimeout(() => { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 100);
+  display.parentNode.insertBefore(input, display.nextSibling);
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+  input.onblur = () => {
+    const v = input.value.trim();
+    mindsets[index].pl = v;
+    saveStore(store);
+    renderMindsetCards();
+  };
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    else if (e.key === 'Escape') { input.blur(); }
+  };
 }
-function closePlModal() {
-  document.getElementById('plModal').classList.remove('show');
-  __plEditingIndex = -1;
-}
-function clearPlInput() {
-  document.getElementById('plInput').value = '';
-}
-function savePlInput() {
-  if (__plEditingIndex < 0) { closePlModal(); return; }
-  const v = document.getElementById('plInput').value.trim();
-  const mindsets = getMindsetData();
-  mindsets[__plEditingIndex].pl = v;
-  saveStore(store);
-  closePlModal();
-  renderMindsetCards();
-}
-// 盈亏弹窗回车保存
-document.getElementById('plInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); savePlInput(); }
-  else if (e.key === 'Escape') { e.preventDefault(); closePlModal(); }
-});
 
 function renderMindsetThought(index, field, containerId, txt) {
   const container = document.getElementById(containerId);
@@ -3482,7 +3460,7 @@ function editIndexCard(card) {
   // 替换为输入框
   card.innerHTML =
     `<div class="index-name">${escapeHtml(name)}</div>` +
-    `<input class="index-edit-input index-edit-price" type="text" inputmode="decimal" value="${escapeAttr(priceVal)}" placeholder="价格" data-field="price">` +
+    `<input class="index-edit-input index-edit-price" type="text" inputmode="decimal" value="${escapeAttr(priceVal)}" placeholder="点数" data-field="price">` +
     `<input class="index-edit-input index-edit-pct" type="text" inputmode="decimal" value="${escapeAttr(pctVal)}" placeholder="涨跌幅" data-field="pct">%` +
     `<input class="index-edit-input index-edit-amt" type="text" inputmode="decimal" value="${escapeAttr(amtVal)}" placeholder="涨跌点" data-field="amt">`;
 
