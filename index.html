@@ -593,17 +593,14 @@
   /* 指数编辑模式：历史日期时可点击编辑 */
   .index-card.editable {
     cursor: pointer;
-    border-style: dashed;
-    border-color: var(--blue);
   }
   .index-card.editable:hover {
     background: var(--panel);
   }
-  /* 编辑态输入框：背景/字号与显示态一致 */
+  /* 编辑态输入框：背景/字号与显示态一致，无边框 */
   .index-card .index-edit-input {
     background: transparent;
     border: none;
-    border-bottom: 1px solid var(--blue);
     color: var(--text);
     font-family: inherit;
     font-weight: inherit;
@@ -3460,9 +3457,9 @@ function editIndexCard(card) {
   // 替换为输入框
   card.innerHTML =
     `<div class="index-name">${escapeHtml(name)}</div>` +
-    `<input class="index-edit-input index-edit-price" type="text" inputmode="decimal" value="${escapeAttr(priceVal)}" placeholder="点数" data-field="price">` +
-    `<input class="index-edit-input index-edit-pct" type="text" inputmode="decimal" value="${escapeAttr(pctVal)}" placeholder="涨跌幅" data-field="pct">%` +
-    `<input class="index-edit-input index-edit-amt" type="text" inputmode="decimal" value="${escapeAttr(amtVal)}" placeholder="涨跌点" data-field="amt">`;
+    `<input class="index-edit-input index-edit-price" type="text" inputmode="text" value="${escapeAttr(priceVal)}" placeholder="点数" data-field="price">` +
+    `<input class="index-edit-input index-edit-pct" type="text" inputmode="text" value="${escapeAttr(pctVal)}" placeholder="涨跌幅" data-field="pct">%` +
+    `<input class="index-edit-input index-edit-amt" type="text" inputmode="text" value="${escapeAttr(amtVal)}" placeholder="涨跌点" data-field="amt">`;
 
   const inputs = card.querySelectorAll('input');
   inputs.forEach(inp => {
