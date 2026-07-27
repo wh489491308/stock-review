@@ -1205,7 +1205,7 @@
     margin-top: 4px;
   }
 
-  #historyView .history-header {
+  #historyView .history-header, #stockView .history-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1213,19 +1213,19 @@
     flex-wrap: wrap;
     gap: 12px;
   }
-  #historyView .history-header h2 {
+  #historyView .history-header h2, #stockView .history-header h2 {
     font-size: 20px;
     font-weight: 600;
     margin: 0;
     padding: 0;
     border: none;
   }
-  #historyView .history-filter {
+  #historyView .history-filter, #stockView .history-filter {
     display: flex;
     align-items: center;
     gap: 10px;
   }
-  #historyView .history-filter input {
+  #historyView .history-filter input, #stockView .history-filter input {
     background: var(--panel-2);
     border: 1px solid var(--border);
     color: var(--text);
@@ -1235,14 +1235,14 @@
     font-family: inherit;
     outline: none;
   }
-  #historyView .history-filter input:focus { border-color: var(--blue); }
+  #historyView .history-filter input:focus, #stockView .history-filter input:focus { border-color: var(--blue); }
 
-  #historyView .history-actions {
+  #historyView .history-actions, #stockView .history-actions {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
   }
-  #historyView .history-actions .btn {
+  #historyView .history-actions .btn, #stockView .history-actions .btn {
     white-space: nowrap;
   }
 
@@ -1640,8 +1640,8 @@
       </div>
     </div>
     <div class="history-filter">
-      <span style="color:var(--text-dim);font-size:13px">搜索：</span>
-      <input type="text" id="stockSearchInput" placeholder="输入个股名称" oninput="renderStockView()" style="background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:14px;font-family:inherit;outline:none;width:140px">
+      <span style="color:var(--text-dim);font-size:13px">搜索个股：</span>
+      <input type="text" id="stockSearchInput" oninput="renderStockView()">
       <button class="btn btn-ghost btn-sm" onclick="clearStockSearch()">清除</button>
     </div>
   </div>
@@ -3711,7 +3711,12 @@ function rebuildStockSummary() {
     name,
     records: map[name].sort((a,b) => a.date < b.date ? 1 : -1)
   }));
-  arr.sort((a,b) => b.records.length - a.records.length);
+  // 排序：按个股最近一次出现的日期倒序（最新日期中出现的排前面）
+  arr.sort((a,b) => {
+    const aLast = a.records.length > 0 ? a.records[0].date : '';
+    const bLast = b.records.length > 0 ? b.records[0].date : '';
+    return aLast < bLast ? 1 : (aLast > bLast ? -1 : 0);
+  });
   saveStockSummary(arr);
   return arr;
 }
@@ -3846,10 +3851,12 @@ function saveReviewSnapshot() {
 function exportBackup() {
   const backup = {
     __type: 'stock_review_backup',
-    __version: 1,
+    __version: 2,
     __exportedAt: new Date().toISOString(),
     store: loadStore(),
-    history: loadHistory()
+    history: loadHistory(),
+    stockSummary: loadStockSummary(),
+    breadth: loadBreadth()
   };
   const json = JSON.stringify(backup, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -3865,7 +3872,8 @@ function exportBackup() {
 
   const dateCount = Object.keys(backup.store || {}).length;
   const historyCount = (backup.history || []).length;
-  centerAlert(`✅ 备份成功！\n\n文件名：${fname}\n包含 ${dateCount} 个交易日数据，${historyCount} 条历史记录\n\n请到手机“文件”App 或下载目录查看。`);
+  const stockCount = (backup.stockSummary || []).length;
+  centerAlert(`✅ 备份成功！\n\n文件名：${fname}\n包含 ${dateCount} 个交易日数据，${historyCount} 条历史记录，${stockCount} 只个股汇总\n\n请到手机"文件"App 或下载目录查看。`);
 }
 
 function importBackup() {
@@ -3915,6 +3923,18 @@ function importBackup() {
           mergedHistory = backup.history.length;
         }
 
+        // 合并个股汇总：全量覆盖
+        let mergedStocks = 0;
+        if (Array.isArray(backup.stockSummary)) {
+          saveStockSummary(backup.stockSummary);
+          mergedStocks = backup.stockSummary.length;
+        }
+
+        // 合并涨平跌：全量覆盖
+        if (backup.breadth) {
+          saveBreadth(backup.breadth);
+        }
+
         // 刷新页面
         store = curStore;
         renderTiming();
@@ -3926,8 +3946,11 @@ function importBackup() {
         if (document.getElementById('historyView').classList.contains('show')) {
           renderHistoryList();
         }
+        if (document.getElementById('stockView').classList.contains('show')) {
+          renderStockView();
+        }
 
-        centerAlert(`✅ 导入成功！\n\n文件：${file.name}\n导入 ${mergedDays} 个交易日数据，${mergedHistory} 条历史记录\n\n相同日期的数据已覆盖为文件中的内容`);
+        centerAlert(`✅ 导入成功！\n\n文件：${file.name}\n导入 ${mergedDays} 个交易日数据，${mergedHistory} 条历史记录，${mergedStocks} 只个股汇总\n\n相同日期的数据已覆盖为文件中的内容`);
       } catch(err) {
         centerAlert('❌ 导入失败\n\n文件解析错误：' + err.message);
       }
