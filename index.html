@@ -555,6 +555,10 @@
     min-width: 0;
     text-align: center;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
   .index-card .index-name {
     font-size: 12px;
@@ -1387,7 +1391,6 @@
   <div class="index-section">
     <div class="index-header">
       <label>板块指数：</label>
-      <button class="btn btn-sm btn-ghost" id="refreshIndexBtn" onclick="fetchIndexData()">更新于 —</button>
     </div>
     <div class="index-grid" id="indexGrid">
       <div class="index-card" data-code="sh000001">
@@ -2346,8 +2349,6 @@ function fetchIndexData() {
 
 /* 腾讯接口：用 <script charset="gbk"> JSONP 方式加载 */
 function fetchIndexViaTencent() {
-  const btn = document.getElementById('refreshIndexBtn');
-  if (btn) { btn.textContent = '⏳ 加载中...'; btn.disabled = true; }
   // 清除旧数据
   window.__indexCallback = function() {
     INDEX_CODES.forEach(code => {
@@ -2366,10 +2367,6 @@ function fetchIndexViaTencent() {
       const low = parseFloat(parts[34]);
       updateIndexCard(code, name, price, changeAmt, changePct, high, low);
     });
-    const now = new Date();
-    const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-    const btn = document.getElementById('refreshIndexBtn');
-    if (btn) { btn.textContent = '更新于 ' + timeStr + ' | 🔄'; btn.disabled = false; }
   };
   const url = 'https://qt.gtimg.cn/q=' + INDEX_CODES.join(',');
   const oldScript = document.getElementById('indexScript');
@@ -2379,8 +2376,7 @@ function fetchIndexViaTencent() {
   script.charset = 'gbk';
   script.src = url + '&t=' + Date.now();  // 加时间戳防缓存
   script.onerror = function() {
-    const btn = document.getElementById('refreshIndexBtn');
-    if (btn) { btn.textContent = '更新于 — | 🔄'; btn.disabled = false; }
+    // 静默失败，不再更新按钮文字
   };
   script.onload = function() {
     if (window.__indexCallback) window.__indexCallback();
@@ -3335,6 +3331,40 @@ function switchTab(tab) {
   }
 }
 
+/* 将历史快照中的指数数据渲染到卡片 */
+function renderIndexCards(indexData) {
+  if (!Array.isArray(indexData)) return;
+  indexData.forEach(idx => {
+    const card = document.querySelector('.index-card[data-code="' + idx.code + '"]');
+    if (!card) return;
+    card.querySelector('.index-name').textContent = idx.name || '';
+    card.querySelector('.index-price').textContent = idx.price || '—';
+    const changeEl = card.querySelector('.index-change');
+    changeEl.textContent = idx.raw || (idx.pct ? `${idx.pct}%` : '—');
+    // 涨跌颜色
+    card.classList.remove('up', 'down', 'flat');
+    const pctNum = parseFloat(idx.pct);
+    if (!isNaN(pctNum)) {
+      if (pctNum > 0) card.classList.add('up');
+      else if (pctNum < 0) card.classList.add('down');
+      else card.classList.add('flat');
+    } else {
+      card.classList.add('flat');
+    }
+  });
+}
+
+/* 清空指数卡片（显示占位符） */
+function clearIndexCards() {
+  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
+    card.querySelector('.index-name').textContent = card.dataset.code === 'sh000001' ? '上证指数' :
+                                                     card.dataset.code === 'sz399001' ? '深证成指' : '创业板指';
+    card.querySelector('.index-price').textContent = '—';
+    card.querySelector('.index-change').textContent = '—';
+    card.classList.remove('up', 'down', 'flat');
+  });
+}
+
 /* 获取当前页面指数数据 */
 function getIndexSnapshot() {
   const cards = document.querySelectorAll('#indexGrid .index-card');
@@ -3864,8 +3894,19 @@ function editTitleDate() {
       if (snap.breadth) {
         saveBreadth(snap.breadth);
       }
+      // 恢复指数数据到卡片（使用历史快照，不刷新网络）
+      if (snap.indexData && snap.indexData.length > 0) {
+        renderIndexCards(snap.indexData);
+      } else {
+        clearIndexCards();
+      }
       saveStore(store);
       toast('已加载 ' + fmtMonthDay(newDate) + ' 的历史复盘数据');
+    } else {
+      // 无历史数据：清空指数卡片并自动从网络获取该交易日指数
+      clearIndexCards();
+      fetchIndexData();
+      toast('指数已刷新');
     }
 
     // 重新渲染所有模块
