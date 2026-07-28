@@ -1251,6 +1251,7 @@
   /* 横屏全屏态：固定铺满整个视口，旋转 90° */
   #fundModule {
     position: relative;
+    transition: opacity 0.2s ease;
   }
   #fundModule.fs-active {
     position: fixed;
@@ -1269,6 +1270,11 @@
     display: block;
     background: var(--bg);
     overflow: hidden;
+    opacity: 0;
+    animation: fsFadeIn 0.25s ease 0.05s forwards;
+  }
+  @keyframes fsFadeIn {
+    to { opacity: 1; }
   }
   /* 桌面端不旋转，直接铺满 */
   @media (min-width: 900px) {
@@ -1466,20 +1472,31 @@
   #bottomBar .menu-btn:hover .menu-icon { transform: scale(1.08); }
   body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 
-  /* ===== 历史视图 ===== */
-  #historyView {
+  /* ===== 视图切换过渡 ===== */
+  #mainView, #historyView, #stockView {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  #mainView.hide {
     display: none;
+  }
+  #mainView {
+    animation: viewFadeIn 0.25s ease;
+  }
+  @keyframes viewFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #historyView, #stockView {
+    display: none;
+    opacity: 0;
+    transform: translateY(8px);
     padding-bottom: 100px;
   }
-  #historyView.show { display: block; }
-  #mainView.hide { display: none; }
-
-  /* ===== 个股视图 ===== */
-  #stockView {
-    display: none;
-    padding-bottom: 100px;
+  #historyView.show, #stockView.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
   }
-  #stockView.show { display: block; }
   /* 个股卡片：复用 history-card 样式 */
   .stock-summary-card {
     background: var(--panel);
@@ -1498,8 +1515,17 @@
   }
   .stock-summary-card .ssc-name { font-size: 16px; font-weight: 600; }
   .stock-summary-card .ssc-count { font-size: 12px; color: var(--text-dim); }
-  .stock-summary-card .ssc-records { margin-top: 10px; display: none; }
-  .stock-summary-card.expanded .ssc-records { display: block; }
+  .stock-summary-card .ssc-records {
+    margin-top: 10px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+  }
+  .stock-summary-card.expanded .ssc-records {
+    max-height: 3000px;
+    opacity: 1;
+  }
   .stock-summary-card .ssc-record {
     background: var(--panel-2);
     border-radius: 6px;
@@ -1858,7 +1884,11 @@
     align-items: center;
     justify-content: center;
   }
-  #historyDetailModal.show { display: flex; }
+  #historyDetailModal.show { display: flex; animation: modalFadeIn 0.2s ease; }
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
   #historyDetailModal .detail-panel {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -1869,6 +1899,11 @@
     overflow-y: auto;
     padding: 24px;
     position: relative;
+    animation: panelSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes panelSlideIn {
+    from { opacity: 0; transform: scale(0.92) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
   #historyDetailModal .detail-close {
     position: absolute;
@@ -4764,25 +4799,38 @@ function switchTab(tab) {
   const bottomBtns = document.querySelectorAll('#bottomBar .menu-btn');
 
   bottomBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  // 隐藏所有视图
-  mainView.classList.remove('hide');
-  historyView.classList.remove('show');
-  if (stockView) stockView.classList.remove('show');
   exportBtn.style.display = 'none';
   saveBtn.style.display = 'none';
 
   if (tab === 'review') {
     exportBtn.style.display = '';
     saveBtn.style.display = '';
-  } else if (tab === 'history') {
-    mainView.classList.add('hide');
-    historyView.classList.add('show');
-    renderHistoryList();
-  } else if (tab === 'stock') {
-    mainView.classList.add('hide');
-    if (stockView) stockView.classList.add('show');
-    rebuildAndRenderStockView();
   }
+
+  // 先淡出当前视图
+  const isMainVisible = !mainView.classList.contains('hide');
+  const isHistoryVisible = historyView.classList.contains('show');
+  const isStockVisible = stockView && stockView.classList.contains('show');
+
+  // 移除所有 show，添加 hide
+  historyView.classList.remove('show');
+  if (stockView) stockView.classList.remove('show');
+
+  // 用 requestAnimationFrame 确保淡入过渡触发
+  requestAnimationFrame(() => {
+    if (tab === 'review') {
+      mainView.classList.remove('hide');
+    } else {
+      mainView.classList.add('hide');
+      if (tab === 'history') {
+        historyView.classList.add('show');
+        renderHistoryList();
+      } else if (tab === 'stock') {
+        if (stockView) stockView.classList.add('show');
+        rebuildAndRenderStockView();
+      }
+    }
+  });
 }
 
 /* 将历史快照中的指数数据渲染到卡片 */
