@@ -1728,6 +1728,11 @@
     white-space: nowrap;
     flex-wrap: nowrap !important;
     gap: 0;
+    overflow: hidden;
+  }
+  .history-card .hc-meta.hc-mv-row > span:first-child {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .history-card .hc-meta.hc-mv-row .hc-breadth {
     margin-left: 33%;
@@ -1788,10 +1793,12 @@
   .hc-idx-row .idx-tag.idx-center { text-align: center; flex: 1; }
   .hc-idx-row .idx-tag.idx-right { text-align: right; }
   .history-card .hc-breadth {
-    display: flex;
+    display: inline-flex;
     gap: 4px;
     font-size: 11px;
     font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .history-card .hc-breadth .b-up { color: var(--red); }
   .history-card .hc-breadth .b-flat { color: var(--text-dim); }
@@ -5586,9 +5593,7 @@ function renderHistoryList() {
     // 涨平跌（与活跃市值同一行）
     // 兼容新旧数据：旧快照为 breadth.up/flat/down，新快照为 upTotal/bins[5]/downTotal
     const ufd = getBreadthUFD(h.breadth);
-    const breadthHtml = `<span class="hc-breadth">
-      &nbsp;&nbsp;涨平跌 <span class="b-up">${ufd.up || '—'}</span>:<span class="b-flat">${ufd.flat || '—'}</span>:<span class="b-down">${ufd.down || '—'}</span>
-    </span>`;
+    const breadthHtml = `<span class="hc-breadth">涨平跌 <span class="b-up">${ufd.up || '—'}</span>:<span class="b-flat">${ufd.flat || '—'}</span>:<span class="b-down">${ufd.down || '—'}</span></span>`;
 
     // 当日盈亏（取第一个心态子模块的 pl）
     const plText = (h.mindsets && h.mindsets.length > 0) ? (h.mindsets[0].pl || '') : '';
