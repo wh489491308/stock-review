@@ -1787,6 +1787,22 @@
   .history-card .hc-breadth .b-up { color: var(--red); }
   .history-card .hc-breadth .b-flat { color: var(--text-dim); }
   .history-card .hc-breadth .b-down { color: var(--green); }
+  .history-card .hc-turnover-row {
+    font-size: 10px;
+    color: var(--text-dim);
+    gap: 10px;
+    margin-top: 1px;
+  }
+  .history-card .hc-turnover-row .hc-to-item {
+    white-space: nowrap;
+  }
+  .history-card .hc-turnover-row .hc-to-val {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .history-card .hc-turnover-row .hc-to-delta {
+    font-weight: 500;
+  }
   .history-empty {
     text-align: center;
     color: var(--text-dim);
@@ -5563,6 +5579,24 @@ function renderHistoryList() {
       thoughtHtml = `<div class="hc-thought">${escapeHtml(h.thought)}</div>`;
     }
 
+    // 成交额信息行
+    const bObj = h.breadth || {};
+    const hct = bObj.turnover || '';
+    const hctd = bObj.turnoverDelta || '';
+    const hca = bObj.avg30 || '';
+    const hcad = bObj.avg30Delta || '';
+    let turnoverHtml = '';
+    if (hct || hctd || hca || hcad) {
+      const tdC = hctd && String(hctd).startsWith('-') ? 'var(--green)' : 'var(--red)';
+      const adC = hcad && String(hcad).startsWith('-') ? 'var(--green)' : 'var(--red)';
+      turnoverHtml = `<div class="hc-meta hc-turnover-row">
+        <span class="hc-to-item">成交额 <span class="hc-to-val">${hct || '—'}</span></span>
+        <span class="hc-to-item">较上日 <span class="hc-to-delta" style="color:${tdC}">${hctd || '—'}</span></span>
+        <span class="hc-to-item">30日均 <span class="hc-to-val">${hca || '—'}</span></span>
+        <span class="hc-to-item">均差 <span class="hc-to-delta" style="color:${adC}">${hcad || '—'}</span></span>
+      </div>`;
+    }
+
     return `<div class="history-card" onclick="viewHistoryDetail(${i}, event)">
       <div class="hc-info">
         <div class="hc-date-row">
@@ -5574,6 +5608,7 @@ function renderHistoryList() {
           <span>活跃市值：<span class="idx-tag ${mvCls}">${mvStr}</span></span>
           ${breadthHtml}
         </div>
+        ${turnoverHtml}
         <div class="hc-meta hc-idx-row">${idxHtml}</div>
         ${thoughtHtml}
       </div>
@@ -5628,6 +5663,20 @@ function viewHistoryDetail(idx, evt) {
   <strong style="color:var(--text-dim)">平 ${breadth.flat || '—'}</strong> /
   <strong style="color:var(--green)">跌 ${breadth.down || '—'}</strong>
 </div>`;
+
+  // 成交额信息（与模块一格式一致，四项一排）
+  const bturnover = (h.breadth && h.breadth.turnover) || '';
+  const bturnoverDelta = (h.breadth && h.breadth.turnoverDelta) || '';
+  const bavg30 = (h.breadth && h.breadth.avg30) || '';
+  const bavg30Delta = (h.breadth && h.breadth.avg30Delta) || '';
+  const tdCls = bturnoverDelta && String(bturnoverDelta).startsWith('-') ? 'color:var(--green)' : 'color:var(--red)';
+  const adCls = bavg30Delta && String(bavg30Delta).startsWith('-') ? 'color:var(--green)' : 'color:var(--red)';
+  html += `<div class="detail-item" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+    <span>成交额：<strong style="color:var(--text)">${bturnover || '—'}</strong></span>
+    <span>较上一日：<strong style="${tdCls}">${bturnoverDelta || '—'}</strong></span>
+    <span>30日均：<strong style="color:var(--text)">${bavg30 || '—'}</strong></span>
+    <span>平均差：<strong style="${adCls}">${bavg30Delta || '—'}</strong></span>
+  </div>`;
 
   // 择时分析
   html += `<div class="detail-item" style="margin-top:8px;white-space:pre-wrap;background:var(--panel-2);padding:8px 12px;border-radius:6px">${escapeHtml(h.thought || '（无分析内容）')}</div>`;
