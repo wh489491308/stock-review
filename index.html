@@ -1790,18 +1790,16 @@
   .history-card .hc-turnover-row {
     font-size: 10px;
     color: var(--text-dim);
-    gap: 10px;
+    gap: 12px;
     margin-top: 1px;
+    white-space: nowrap;
   }
-  .history-card .hc-turnover-row .hc-to-item {
+  .history-card .hc-turnover-row .hc-to-group {
     white-space: nowrap;
   }
   .history-card .hc-turnover-row .hc-to-val {
-    color: var(--text);
-    font-weight: 500;
-  }
-  .history-card .hc-turnover-row .hc-to-delta {
-    font-weight: 500;
+    color: var(--text-dim);
+    font-weight: 600;
   }
   .history-empty {
     text-align: center;
@@ -5590,10 +5588,8 @@ function renderHistoryList() {
       const tdC = hctd && String(hctd).startsWith('-') ? 'var(--green)' : 'var(--red)';
       const adC = hcad && String(hcad).startsWith('-') ? 'var(--green)' : 'var(--red)';
       turnoverHtml = `<div class="hc-meta hc-turnover-row">
-        <span class="hc-to-item">成交额 <span class="hc-to-val">${hct || '—'}</span></span>
-        <span class="hc-to-item">较上日 <span class="hc-to-delta" style="color:${tdC}">${hctd || '—'}</span></span>
-        <span class="hc-to-item">30日均 <span class="hc-to-val">${hca || '—'}</span></span>
-        <span class="hc-to-item">均差 <span class="hc-to-delta" style="color:${adC}">${hcad || '—'}</span></span>
+        <span class="hc-to-group">成交额：<strong class="hc-to-val">${hct || '—'}</strong> <strong style="color:${tdC}">${hctd || '—'}</strong></span>
+        <span class="hc-to-group">30日均：<strong class="hc-to-val">${hca || '—'}</strong> <strong style="color:${adC}">${hcad || '—'}</strong></span>
       </div>`;
     }
 
@@ -5671,11 +5667,10 @@ function viewHistoryDetail(idx, evt) {
   const bavg30Delta = (h.breadth && h.breadth.avg30Delta) || '';
   const tdCls = bturnoverDelta && String(bturnoverDelta).startsWith('-') ? 'color:var(--green)' : 'color:var(--red)';
   const adCls = bavg30Delta && String(bavg30Delta).startsWith('-') ? 'color:var(--green)' : 'color:var(--red)';
-  html += `<div class="detail-item" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
-    <span>成交额：<strong style="color:var(--text)">${bturnover || '—'}</strong></span>
-    <span>较上一日：<strong style="${tdCls}">${bturnoverDelta || '—'}</strong></span>
-    <span>30日均：<strong style="color:var(--text)">${bavg30 || '—'}</strong></span>
-    <span>平均差：<strong style="${adCls}">${bavg30Delta || '—'}</strong></span>
+  html += `<div class="detail-item" style="white-space:nowrap">
+    <span>成交额：<strong style="color:var(--text-dim)">${bturnover || '—'}</strong> <strong style="${tdCls}">${bturnoverDelta || '—'}</strong></span>
+    &nbsp;&nbsp;
+    <span>30日均：<strong style="color:var(--text-dim)">${bavg30 || '—'}</strong> <strong style="${adCls}">${bavg30Delta || '—'}</strong></span>
   </div>`;
 
   // 择时分析
