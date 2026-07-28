@@ -1735,7 +1735,7 @@
     flex-shrink: 0;
   }
   .history-card .hc-meta.hc-mv-row .hc-breadth {
-    margin-left: 33%;
+    margin-left: 28%;
     white-space: nowrap;
   }
   .history-card .hc-del-btn {
@@ -2128,7 +2128,7 @@
 
 <!-- 底部菜单栏 -->
 <div id="bottomBar">
-  <button class="menu-btn active" data-tab="review" onclick="switchTab('review')" ondblclick="forceUpdate(event)">
+  <button class="menu-btn active" data-tab="review" onclick="switchTab('review')">
     <span class="menu-icon">📝</span>
     <span>复盘</span>
   </button>
@@ -3234,10 +3234,22 @@ function editBreadth() {
   __breadthEditing = true;
   const first = el.querySelector('input');
   if (first) { first.focus(); first.select(); }
-  el.querySelectorAll('input').forEach(inp => inp.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); commitBreadth(); }
-    else if (e.key === 'Escape') { e.preventDefault(); renderBreadth(); }
-  }));
+  el.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); commitBreadth(); }
+      else if (e.key === 'Escape') { e.preventDefault(); renderBreadth(); }
+    });
+    inp.addEventListener('blur', () => {
+      // 延迟执行，避免点击其他 input 时误触发
+      setTimeout(() => {
+        if (!__breadthEditing) return;
+        // 检查焦点是否已移到 breadth 面板外
+        const active = document.activeElement;
+        if (active && el.contains(active) && active.tagName === 'INPUT') return;
+        commitBreadth();
+      }, 150);
+    });
+  });
 }
 function commitBreadth() {
   if (!__breadthEditing) return;
@@ -4743,43 +4755,6 @@ function saveHistory(arr) {
 }
 
 /* 切换复盘/历史视图 */
-/* 双击"复盘"按钮：从 GitHub 拉取最新版本并热更新 */
-let __updating = false;
-function forceUpdate(e) {
-  if (e) e.preventDefault();
-  if (__updating) return;
-  __updating = true;
-  toast('正在同步最新版本...');
-  // 带时间戳破缓存，获取最新 HTML
-  const url = location.pathname + '?t=' + Date.now();
-  fetch(url, { cache: 'no-store' })
-    .then(r => {
-      if (!r.ok) throw new Error('网络错误 ' + r.status);
-      return r.text();
-    })
-    .then(html => {
-      // 检查是否真的有变化（简单比较长度差异或内容差异）
-      const curLen = document.documentElement.outerHTML.length;
-      // 直接用新 HTML 替换整个页面
-      document.open();
-      document.write(html);
-      document.close();
-      // 页面已重写，toast 需在新文档中触发
-      setTimeout(() => {
-        const el = document.getElementById('toast');
-        if (el) {
-          el.textContent = '✅ 已同步最新版本';
-          el.classList.add('show');
-          setTimeout(() => el.classList.remove('show'), 2500);
-        }
-      }, 100);
-    })
-    .catch(err => {
-      __updating = false;
-      centerAlert('❌ 同步失败\n\n' + (err.message || err) + '\n\n请检查网络后重试');
-    });
-}
-
 function switchTab(tab) {
   const mainView = document.getElementById('mainView');
   const historyView = document.getElementById('historyView');
