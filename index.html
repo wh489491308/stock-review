@@ -1725,9 +1725,12 @@
     margin-top: 4px;
     display: flex;
     align-items: center;
+    white-space: nowrap;
+    flex-wrap: nowrap;
   }
   .history-card .hc-mv-row .hc-breadth {
     margin-left: 33%;
+    white-space: nowrap;
   }
   .history-card .hc-del-btn {
     position: absolute;
@@ -4224,7 +4227,14 @@ const ALL_BATCH_PROMPT = `整体执行规则：
 固定输出格式：
 #概念板块#
 板块名涨跌幅，板块名涨跌幅……
-#结束#`;
+#结束#
+
+硬性约束（换设备永久生效）
+1. 四段内容顺序固定：市场行情→主力资金→行业板块→概念板块，不可调换；
+2. 所有标签#xxx#、末尾#结束#必须完整保留，不能删减、修改文字；
+3. 禁止额外增加解读、注释、说明文字，只输出四段格式化内容；
+4. 图片顺序颠倒时自动识别对应内容归类，不会打乱输出格式；
+5. 严格遵守数值提取规则，换算、标点、分隔符全程统一标准。`;
 function handleAllBatchClick() {
   if (__allBatchFirstClick) {
     // 第一次点击：复制提示词
