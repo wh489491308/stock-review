@@ -5023,8 +5023,8 @@ function rebuildStockSummary() {
     };
   });
 
-  // 排序：按最近一次复盘中个股出现顺序排列，新出现的（之前历史无记录）排在最上面
-  // 1. 找到最近一次有 stocks 数据的历史记录
+  // 排序：优先按最近一次复盘记录中持仓的股票顺序排列
+  // 不在最近记录中的股票，按最新出现日期倒序排在后面
   const sortedHistory = history.slice().sort((a, b) => a.date < b.date ? 1 : -1);
   let latestStocks = [];
   for (const h of sortedHistory) {
@@ -5033,35 +5033,13 @@ function rebuildStockSummary() {
       break;
     }
   }
-  // 2. 为每只股票计算出现过的最早日期（判断是否"新出现"）
-  const firstAppearDate = {};
-  history.forEach(h => {
-    if (!h.stocks) return;
-    h.stocks.forEach(s => {
-      if (!s.name) return;
-      if (!firstAppearDate[s.name] || h.date < firstAppearDate[s.name]) {
-        firstAppearDate[s.name] = h.date;
-      }
-    });
-  });
-  // 3. 最近记录中的最新日期
-  const latestDate = sortedHistory.length > 0 ? sortedHistory[0].date : '';
-  // 4. 构建排序顺序：最近记录中的顺序索引
   const latestOrder = {};
   latestStocks.forEach((name, i) => { latestOrder[name] = i; });
   arr.sort((a, b) => {
     const aInLatest = a.name in latestOrder;
     const bInLatest = b.name in latestOrder;
-    // 都在最近记录中：按最近记录中的顺序排列，新出现的排前面
-    if (aInLatest && bInLatest) {
-      // 判断是否新出现（首次出现日期 == 最近日期）
-      const aIsNew = firstAppearDate[a.name] === latestDate;
-      const bIsNew = firstAppearDate[b.name] === latestDate;
-      if (aIsNew && !bIsNew) return -1;
-      if (!aIsNew && bIsNew) return 1;
-      // 同为新或同为旧：按最近记录中的顺序
-      return latestOrder[a.name] - latestOrder[b.name];
-    }
+    // 都在最近记录中：按最近记录中的顺序
+    if (aInLatest && bInLatest) return latestOrder[a.name] - latestOrder[b.name];
     // 只有 a 在最近记录中：a 排前
     if (aInLatest && !bInLatest) return -1;
     // 只有 b 在最近记录中：b 排前
