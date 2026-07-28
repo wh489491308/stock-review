@@ -1723,6 +1723,11 @@
   }
   .history-card .hc-mv-row {
     margin-top: 4px;
+    display: flex;
+    align-items: center;
+  }
+  .history-card .hc-mv-row .hc-breadth {
+    margin-left: 33%;
   }
   .history-card .hc-del-btn {
     position: absolute;
@@ -1790,9 +1795,10 @@
   .history-card .hc-turnover-row {
     font-size: 10px;
     color: var(--text-dim);
-    gap: 12px;
     margin-top: 1px;
     white-space: nowrap;
+    display: flex;
+    justify-content: space-between;
   }
   .history-card .hc-turnover-row .hc-to-group {
     white-space: nowrap;
@@ -3213,8 +3219,7 @@ function editBreadth() {
     `<div class="breadth-edit-pair">` +
       `<div class="pair-item"><span>30日均</span><input class="breadth-input" id="bdAvg30" type="text" value="${b.avg30 || ''}" placeholder="3.04万亿"></div>` +
       `<div class="pair-item"><span>平均差</span><input class="breadth-input" id="bdAvg30Delta" type="text" value="${b.avg30Delta || ''}" placeholder="-32.87%"></div>` +
-    `</div>` +
-    `<div class="breadth-tip">回车保存 · Esc 取消</div>`;
+    `</div>`;
   __breadthEditing = true;
   const first = el.querySelector('input');
   if (first) { first.focus(); first.select(); }
@@ -4196,7 +4201,7 @@ const ALL_BATCH_PROMPT = `整体执行规则：
 跌停数量、上涨超7%个股数、上涨5~7%个股数、上涨3~5%个股数、上涨0~3%个股数、平盘0%个股数、下跌0~3%个股数、下跌3~5%个股数、下跌5~7%个股数、下跌超7%个股数、涨停数量、全市场上涨个股总数、全市场下跌个股总数、沪深京当日成交额、相对前一日成交额变动额、近30日日均成交额、当日成交额相对30日均的变动百分比。
 固定输出格式：
 #市场行情#
-跌停xx，>7%xx，5~7%xx，3~5%xx，0~3%xx，0%xx，0~3%xx，3~5%xx，5~7%xx，>7%xx，涨停xx，上涨xx，下跌xx，成交额xx，较上一日xx，30日均xx，平均差xx。
+跌停xx，>7%xx，5~7%xx，3~5%xx，0~3%xx，0%xx，0~3%xx，3~5%xx，5~7%xx，>7%xx，涨停xx，上涨xx，下跌xx，成交额xx，较上一日xx，30日均xx，平均差xx
 #结束#
 
 数据二：主力资金流向（取自第二张资金图）
@@ -4215,19 +4220,11 @@ const ALL_BATCH_PROMPT = `整体执行规则：
 #结束#
 
 数据四：概念板块涨跌幅（取自第三张上涨概念图+第四张下跌概念图合并）
-
 合并两张图所有概念板块，1组=板块名+涨跌幅，中间无符号；各组中文逗号分隔；
 固定输出格式：
 #概念板块#
 板块名涨跌幅，板块名涨跌幅……
-#结束#
-
-硬性约束（换设备永久生效）
-1. 四段内容顺序固定：市场行情→主力资金→行业板块→概念板块，不可调换；
-2. 所有标签#xxx#、末尾#结束#必须完整保留，不能删减、修改文字；
-3. 禁止额外增加解读、注释、说明文字，只输出四段格式化内容；
-4. 图片顺序颠倒时自动识别对应内容归类，不会打乱输出格式；
-5. 严格遵守数值提取规则，换算、标点、分隔符全程统一标准。`;
+#结束#`;
 function handleAllBatchClick() {
   if (__allBatchFirstClick) {
     // 第一次点击：复制提示词
@@ -5669,7 +5666,8 @@ function viewHistoryDetail(idx, evt) {
   const adCls = bavg30Delta && String(bavg30Delta).startsWith('-') ? 'color:var(--green)' : 'color:var(--red)';
   html += `<div class="detail-item" style="white-space:nowrap">
     <span>成交额：<strong style="color:var(--text-dim)">${bturnover || '—'}</strong> <strong style="${tdCls}">${bturnoverDelta || '—'}</strong></span>
-    &nbsp;&nbsp;
+  </div>`;
+  html += `<div class="detail-item" style="white-space:nowrap">
     <span>30日均：<strong style="color:var(--text-dim)">${bavg30 || '—'}</strong> <strong style="${adCls}">${bavg30Delta || '—'}</strong></span>
   </div>`;
 
