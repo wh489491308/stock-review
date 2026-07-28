@@ -5353,7 +5353,7 @@ function saveReviewSnapshot() {
 function exportBackup() {
   const backup = {
     __type: 'stock_review_backup',
-    __version: 2,
+    __version: 3,
     __exportedAt: new Date().toISOString(),
     store: loadStore(),
     history: loadHistory(),
@@ -5375,7 +5375,11 @@ function exportBackup() {
   const dateCount = Object.keys(backup.store || {}).length;
   const historyCount = (backup.history || []).length;
   const stockCount = (backup.stockSummary || []).length;
-  centerAlert(`✅ 备份成功！\n\n文件名：${fname}\n包含 ${dateCount} 个交易日数据，${historyCount} 条历史记录，${stockCount} 只个股汇总\n\n请到手机"文件"App 或下载目录查看。`);
+  let reviewCount = 0;
+  (backup.stockSummary || []).forEach(s => {
+    (s.rounds || []).forEach(r => { if (r.reviewText) reviewCount++; });
+  });
+  centerAlert(`✅ 备份成功！\n\n文件名：${fname}\n包含 ${dateCount} 个交易日数据，${historyCount} 条历史记录，${stockCount} 只个股汇总，${reviewCount} 条清仓复盘\n\n请到手机"文件"App 或下载目录查看。`);
 }
 
 function importBackup() {
@@ -5425,11 +5429,31 @@ function importBackup() {
           mergedHistory = backup.history.length;
         }
 
-        // 合并个股汇总：全量覆盖
+        // 合并个股汇总：按股票名合并，保留已有的清仓复盘内容
         let mergedStocks = 0;
         if (Array.isArray(backup.stockSummary)) {
-          saveStockSummary(backup.stockSummary);
-          mergedStocks = backup.stockSummary.length;
+          const curStocks = loadStockSummary();
+          const curMap = {};
+          curStocks.forEach(s => { curMap[s.name] = s; });
+          backup.stockSummary.forEach(newStock => {
+            const old = curMap[newStock.name];
+            if (old && old.rounds && newStock.rounds) {
+              // 合并 rounds：按 openDate 匹配，保留已有的 reviewText
+              const oldRoundMap = {};
+              old.rounds.forEach(r => { oldRoundMap[r.openDate] = r; });
+              newStock.rounds.forEach(r => {
+                const oldRound = oldRoundMap[r.openDate];
+                if (oldRound && oldRound.reviewText && !r.reviewText) {
+                  r.reviewText = oldRound.reviewText;
+                  r.reviewed = oldRound.reviewed;
+                }
+              });
+            }
+            curMap[newStock.name] = newStock;
+            mergedStocks++;
+          });
+          const merged = Object.values(curMap);
+          saveStockSummary(merged);
         }
 
         // 合并涨平跌：全量覆盖
@@ -5444,6 +5468,7 @@ function importBackup() {
         renderFundTable();
         renderFundTable2();
         renderFundTable3();
+        renderStockCards();
         renderMindsetCards();
         if (document.getElementById('historyView').classList.contains('show')) {
           renderHistoryList();
@@ -5452,7 +5477,7 @@ function importBackup() {
           renderStockView();
         }
 
-        centerAlert(`✅ 导入成功！\n\n文件：${file.name}\n导入 ${mergedDays} 个交易日数据，${mergedHistory} 条历史记录，${mergedStocks} 只个股汇总\n\n相同日期的数据已覆盖为文件中的内容`);
+        centerAlert(`✅ 导入成功！\n\n文件：${file.name}\n导入 ${mergedDays} 个交易日数据，${mergedHistory} 条历史记录，${mergedStocks} 只个股汇总\n\n相同日期的数据已覆盖为文件中的内容，已有清仓复盘已保留`);
       } catch(err) {
         centerAlert('❌ 导入失败\n\n文件解析错误：' + err.message);
       }
