@@ -4732,10 +4732,16 @@ document.getElementById('exitFsBtn').addEventListener('click', (e) => {
 let __exportCanvas = null;
 function exportLongImage() {
   const btn = document.getElementById('exportBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const bottomBar = document.getElementById('bottomBar');
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
-  // 截图前隐藏导出按钮，避免被截进图里
+  // 截图前隐藏浮动元素，避免被截进图里
   const btnDisp = btn.style.display;
+  const saveDisp = saveBtn ? saveBtn.style.display : '';
+  const barDisp = bottomBar ? bottomBar.style.display : '';
   btn.style.display = 'none';
+  if (saveBtn) saveBtn.style.display = 'none';
+  if (bottomBar) bottomBar.style.display = 'none';
   html2canvas(document.body, {
     backgroundColor: '#0f1419',
     scale: Math.min(2, window.devicePixelRatio || 1),
@@ -4746,9 +4752,13 @@ function exportLongImage() {
   }).then(canvas => {
     __exportCanvas = canvas;
     btn.style.display = btnDisp;
+    if (saveBtn) saveBtn.style.display = saveDisp;
+    if (bottomBar) bottomBar.style.display = barDisp;
     saveLongImage(); // 直接保存，不弹预览
   }).catch(err => {
     btn.style.display = btnDisp;
+    if (saveBtn) saveBtn.style.display = saveDisp;
+    if (bottomBar) bottomBar.style.display = barDisp;
     centerAlert('导出失败：' + (err && err.message ? err.message : err));
   });
 }
