@@ -45,7 +45,7 @@
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
   }
-  h1 .date { color: var(--text-dim); font-size: 14px; font-weight: 400; margin-left: 12px; }
+  h1 .date { color: var(--text-dim); font-size: 14px; font-weight: 700; margin-left: 12px; }
   .module {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -4566,7 +4566,7 @@ function centerAlert(msg, onOk) {
 }
 
 /* 初始化 */
-document.getElementById('todayDate').textContent = '📅 ' + latestTradingDay();
+document.getElementById('todayDate').textContent = '📅 ' + fmtMonthDay(latestTradingDay());
 renderTiming();
 renderBreadth();
 renderFundTable();
@@ -6017,7 +6017,7 @@ function editTitleDate() {
       return;
     }
     window.__customTitleDate = newDate;
-    el.textContent = '📅 ' + newDate;
+    el.textContent = '📅 ' + fmtMonthDay(newDate);
     __editingTitleDate = false;
 
     // 如果历史中有这一天的复盘快照，自动加载到 store
@@ -6128,7 +6128,7 @@ function editTitleDate() {
     renderMindsetCards();
   }
   function cancelEdit() {
-    el.textContent = '📅 ' + (window.__customTitleDate || latestTradingDay());
+    el.textContent = '📅 ' + fmtMonthDay(window.__customTitleDate || latestTradingDay());
     __editingTitleDate = false;
   }
   input.addEventListener('blur', () => {
