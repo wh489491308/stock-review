@@ -1270,11 +1270,6 @@
     display: block;
     background: var(--bg);
     overflow: hidden;
-    opacity: 0;
-    animation: fsFadeIn 0.25s ease 0.05s forwards;
-  }
-  @keyframes fsFadeIn {
-    to { opacity: 1; }
   }
   /* 桌面端不旋转，直接铺满 */
   @media (min-width: 900px) {
@@ -1476,13 +1471,6 @@
   }
   #mainView.hide {
     display: none;
-  }
-  #mainView {
-    animation: viewFadeIn 0.25s ease;
-  }
-  @keyframes viewFadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
   }
   #historyView, #stockView {
     display: none;
@@ -1882,11 +1870,7 @@
     align-items: center;
     justify-content: center;
   }
-  #historyDetailModal.show { display: flex; animation: modalFadeIn 0.2s ease; }
-  @keyframes modalFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
+  #historyDetailModal.show { display: flex; }
   #historyDetailModal .detail-panel {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -1897,11 +1881,6 @@
     overflow-y: auto;
     padding: 24px;
     position: relative;
-    animation: panelSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  @keyframes panelSlideIn {
-    from { opacity: 0; transform: scale(0.92) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
   }
   #historyDetailModal .detail-close {
     position: absolute;
@@ -4732,37 +4711,30 @@ document.getElementById('exitFsBtn').addEventListener('click', (e) => {
 let __exportCanvas = null;
 function exportLongImage() {
   const btn = document.getElementById('exportBtn');
-  const saveBtn = document.getElementById('saveBtn');
-  const bottomBar = document.getElementById('bottomBar');
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
   // 截图前隐藏所有 fixed 浮动元素
+  const saveBtn = document.getElementById('saveBtn');
+  const bottomBar = document.getElementById('bottomBar');
   const btnDisp = btn.style.display;
   const saveDisp = saveBtn ? saveBtn.style.display : '';
   const barDisp = bottomBar ? bottomBar.style.display : '';
   btn.style.display = 'none';
   if (saveBtn) saveBtn.style.display = 'none';
   if (bottomBar) bottomBar.style.display = 'none';
-  // 截取 mainView 而非 body，避免 fixed 元素和 padding 干扰
-  const target = document.getElementById('mainView');
-  // 临时移除动画 transform，确保截图完整
-  const targetTransform = target.style.transform;
-  target.style.transform = 'none';
-  html2canvas(target, {
+  html2canvas(document.body, {
     backgroundColor: '#0f1419',
     scale: Math.min(2, window.devicePixelRatio || 1),
     useCORS: true,
     logging: false,
-    windowWidth: target.scrollWidth,
-    windowHeight: target.scrollHeight
+    windowWidth: document.documentElement.scrollWidth,
+    windowHeight: document.documentElement.scrollHeight
   }).then(canvas => {
-    target.style.transform = targetTransform;
+    __exportCanvas = canvas;
     btn.style.display = btnDisp;
     if (saveBtn) saveBtn.style.display = saveDisp;
     if (bottomBar) bottomBar.style.display = barDisp;
-    __exportCanvas = canvas;
     saveLongImage();
   }).catch(err => {
-    target.style.transform = targetTransform;
     btn.style.display = btnDisp;
     if (saveBtn) saveBtn.style.display = saveDisp;
     if (bottomBar) bottomBar.style.display = barDisp;
@@ -5851,14 +5823,10 @@ function screenshotHistoryDetail() {
   // 临时移除高度限制和滚动，确保截取完整长图
   const panelMaxH = panel.style.maxHeight;
   const panelOverflow = panel.style.overflow;
-  const panelAnim = panel.style.animation;
-  const panelTransform = panel.style.transform;
   const modalMaxH = modal ? modal.style.maxHeight : '';
   const modalOverflow = modal ? modal.style.overflow : '';
   panel.style.maxHeight = 'none';
   panel.style.overflow = 'visible';
-  panel.style.animation = 'none';
-  panel.style.transform = 'none';
   if (modal) { modal.style.maxHeight = 'none'; modal.style.overflow = 'visible'; }
 
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
@@ -5874,8 +5842,6 @@ function screenshotHistoryDetail() {
     if (shotBtn) shotBtn.style.display = shotDisp;
     panel.style.maxHeight = panelMaxH;
     panel.style.overflow = panelOverflow;
-    panel.style.animation = panelAnim;
-    panel.style.transform = panelTransform;
     if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
 
     const dateEl = panel.querySelector('.detail-date');
@@ -5902,8 +5868,6 @@ function screenshotHistoryDetail() {
     if (shotBtn) shotBtn.style.display = shotDisp;
     panel.style.maxHeight = panelMaxH;
     panel.style.overflow = panelOverflow;
-    panel.style.animation = panelAnim;
-    panel.style.transform = panelTransform;
     if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
     centerAlert('截图失败：' + (err && err.message ? err.message : err));
   });
