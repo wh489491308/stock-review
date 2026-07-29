@@ -4735,27 +4735,34 @@ function exportLongImage() {
   const saveBtn = document.getElementById('saveBtn');
   const bottomBar = document.getElementById('bottomBar');
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
-  // 截图前隐藏浮动元素，避免被截进图里
+  // 截图前隐藏所有 fixed 浮动元素
   const btnDisp = btn.style.display;
   const saveDisp = saveBtn ? saveBtn.style.display : '';
   const barDisp = bottomBar ? bottomBar.style.display : '';
   btn.style.display = 'none';
   if (saveBtn) saveBtn.style.display = 'none';
   if (bottomBar) bottomBar.style.display = 'none';
-  html2canvas(document.body, {
+  // 截取 mainView 而非 body，避免 fixed 元素和 padding 干扰
+  const target = document.getElementById('mainView');
+  // 临时移除动画 transform，确保截图完整
+  const targetTransform = target.style.transform;
+  target.style.transform = 'none';
+  html2canvas(target, {
     backgroundColor: '#0f1419',
     scale: Math.min(2, window.devicePixelRatio || 1),
     useCORS: true,
     logging: false,
-    windowWidth: document.documentElement.scrollWidth,
-    windowHeight: document.documentElement.scrollHeight
+    windowWidth: target.scrollWidth,
+    windowHeight: target.scrollHeight
   }).then(canvas => {
-    __exportCanvas = canvas;
+    target.style.transform = targetTransform;
     btn.style.display = btnDisp;
     if (saveBtn) saveBtn.style.display = saveDisp;
     if (bottomBar) bottomBar.style.display = barDisp;
-    saveLongImage(); // 直接保存，不弹预览
+    __exportCanvas = canvas;
+    saveLongImage();
   }).catch(err => {
+    target.style.transform = targetTransform;
     btn.style.display = btnDisp;
     if (saveBtn) saveBtn.style.display = saveDisp;
     if (bottomBar) bottomBar.style.display = barDisp;
@@ -5844,10 +5851,14 @@ function screenshotHistoryDetail() {
   // 临时移除高度限制和滚动，确保截取完整长图
   const panelMaxH = panel.style.maxHeight;
   const panelOverflow = panel.style.overflow;
+  const panelAnim = panel.style.animation;
+  const panelTransform = panel.style.transform;
   const modalMaxH = modal ? modal.style.maxHeight : '';
   const modalOverflow = modal ? modal.style.overflow : '';
   panel.style.maxHeight = 'none';
   panel.style.overflow = 'visible';
+  panel.style.animation = 'none';
+  panel.style.transform = 'none';
   if (modal) { modal.style.maxHeight = 'none'; modal.style.overflow = 'visible'; }
 
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
@@ -5863,6 +5874,8 @@ function screenshotHistoryDetail() {
     if (shotBtn) shotBtn.style.display = shotDisp;
     panel.style.maxHeight = panelMaxH;
     panel.style.overflow = panelOverflow;
+    panel.style.animation = panelAnim;
+    panel.style.transform = panelTransform;
     if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
 
     const dateEl = panel.querySelector('.detail-date');
@@ -5889,6 +5902,8 @@ function screenshotHistoryDetail() {
     if (shotBtn) shotBtn.style.display = shotDisp;
     panel.style.maxHeight = panelMaxH;
     panel.style.overflow = panelOverflow;
+    panel.style.animation = panelAnim;
+    panel.style.transform = panelTransform;
     if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
     centerAlert('截图失败：' + (err && err.message ? err.message : err));
   });
