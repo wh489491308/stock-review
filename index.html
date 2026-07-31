@@ -3429,12 +3429,12 @@ function renderStockCards() {
       `<div class="stock-card" data-stock-index="${i}">` +
         `<div class="stock-header">` +
           `<input type="text" id="stockName_${i}" class="stock-name-input" value="${escapeHtml(s.name || '')}" placeholder="股票名称" onchange="saveStockField(${i},'name',this.value)">` +
-          `<input type="text" id="stockDayPrice_${i}" class="stock-dayprice-input" value="${escapeHtml(s.dayPrice || '')}" placeholder="现价" style="color:${priceColor}" onchange="saveStockField(${i},'dayPrice',this.value); updateAllPlanRates(${i})">` +
+          `<input type="text" id="stockDayPrice_${i}" class="stock-dayprice-input" value="${escapeHtml(s.dayPrice || '')}" placeholder="现价" inputmode="decimal" style="color:${priceColor}" onchange="saveStockField(${i},'dayPrice',this.value); updateAllPlanRates(${i})">` +
           `<div class="stock-data-display" id="stockDataDisplay_${i}" onclick="editStockData(${i})">` +
             changeHtml +
           `</div>` +
           `<div class="stock-data-edit" id="stockDataEdit_${i}" style="display:none">` +
-            `<input type="text" id="stockDataInput_${i}" class="stock-data-input" placeholder="如 +3.5" inputmode="decimal">` +
+            `<input type="text" id="stockDataInput_${i}" class="stock-data-input" placeholder="如 +3.5 或 -2.1" inputmode="text">` +
           `</div>` +
           `<button class="stock-remove" onclick="removeStockCard(${i})" title="删除">✕</button>` +
           `<div class="stock-drag-handle" data-drag-index="${i}">` +
