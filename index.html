@@ -2369,6 +2369,7 @@
     justify-content: space-between;
     gap: 8px;
     position: relative;
+    padding: 0 9px;
   }
   .plan-stock-row .psr-name {
     font-size: 15px;
@@ -2376,7 +2377,6 @@
     color: var(--text);
     flex: 0 1 auto;
     text-align: left;
-    margin-left: 9px;
   }
   .plan-stock-row .psr-change {
     font-size: 12px;
@@ -2400,7 +2400,6 @@
     flex: 0 0 auto;
     text-align: right;
     margin-left: auto;
-    margin-right: 9px;
   }
   .plan-stock-row .psr-tag-empty {
     color: var(--text-dim);
@@ -2459,6 +2458,8 @@
     display: flex;
     align-items: center;
     gap: 0;
+    min-width: 0;
+    overflow: hidden;
   }
   /* 方式列：固定宽度靠左，颜色跟随框色 */
   .pp-plan-row .pp-row-detail .pp-col-mode {
@@ -2473,17 +2474,18 @@
   .pp-plan-row .pp-row-detail .pp-col-mode.pp-stop { color: var(--green); }
   /* 中间三列：type稍宽，price/rate等分剩余 */
   .pp-plan-row .pp-row-detail .pp-col-type {
-    flex: 1;
-    min-width: 66px;
+    flex: 1 1 0;
+    min-width: 0;
     padding-left: 14px;
     color: var(--text);
     font-weight: 600;
     text-align: center;
     white-space: nowrap;
+    overflow: hidden;
   }
   .pp-plan-row .pp-row-detail .pp-col-price {
-    flex: 1.2;
-    min-width: 56px;
+    flex: 1.2 1 0;
+    min-width: 0;
     padding-left: 3px;
     color: var(--text);
     font-weight: 600;
