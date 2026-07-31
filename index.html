@@ -5108,8 +5108,8 @@ const ALL_BATCH_SECTIONS = {
    第二次点击：进入批量录入弹窗 */
 let __allBatchFirstClick = true;
 const ALL_BATCH_PROMPT = `整体执行规则：
-无论四张图片上传顺序如何，自动识别四张图对应的四类数据源：
-图1=A股当日大盘总览图、图2=行业+概念主力资金流向图、图3=行业板块涨幅榜（上涨板块）、图4=行业板块跌幅榜；
+无论五张图片上传顺序如何，自动识别五张图对应的五类数据源：
+图1=A股当日大盘总览图、图2=行业+概念主力资金流向图、图3=行业板块涨幅榜（上涨板块）、图4=行业板块跌幅榜、图5=个股涨跌；
 严格按下面四类数据分段输出，每段固定前置标签、末尾固定#结束#，全程无多余解释、无换行错乱、格式丝毫不改。
 
 数据一：大盘市场行情（取自第一张大盘图）
@@ -5142,12 +5142,13 @@ const ALL_BATCH_PROMPT = `整体执行规则：
 板块名涨跌幅，板块名涨跌幅……
 #结束#
 
-数据五：个股涨跌（取自持仓个股行情数据）
-先输出活跃市值百分比，再依次输出每只持仓个股的名称、现价、涨跌幅；
-每只个股3项用中文逗号隔开：股票名，现价XX，涨跌幅XX%；个股之间也用中文逗号分隔；
+数据五：个股涨跌（取自第五张个股涨跌图）
+识别这张图中活跃市值的涨跌幅，所有个股严格按固定字段格式输出：
+活跃市值XX，个股名称，现价XX，涨跌幅XX，个股名称，现价XX，涨跌幅XX……
+各组之间用中文逗号分隔，严格区分"名称、现价、涨跌幅"三个独立字段，不得合并简写。
 固定输出格式：
 #个股涨跌#
-活跃市值±X.XX%，股票名，现价XX，涨跌幅±X.XX%，股票名，现价XX，涨跌幅±X.XX%……
+活跃市值xx，名称，现价xx，涨跌幅xx，名称，现价xx，涨跌幅xx……
 #结束#
 
 硬性约束（换设备永久生效）
@@ -7281,8 +7282,8 @@ function editTitleDate() {
       if (snap.stocks && snap.stocks.length > 0) {
         sd.stocks = snap.stocks.map(s => ({
           name: s.name || '',
-          change: s.change,
-          dayPrice: s.dayPrice || '',
+          change: null,
+          dayPrice: '',
           tag: s.tag || '',
           volume: s.volume || '',
           analysis: s.analysis || '',
@@ -7349,8 +7350,8 @@ function editTitleDate() {
         // 模块三：持仓（stocks）
         store[newDate].stocks = (nearestSnap.stocks || []).map(s => ({
           name: s.name || '',
-          change: s.change,
-          dayPrice: s.dayPrice || '',
+          change: null,
+          dayPrice: '',
           tag: s.tag || '',
           volume: s.volume || '',
           analysis: s.analysis || '',
