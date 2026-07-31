@@ -7375,8 +7375,19 @@ function editTitleDate() {
       saveStore(store);
       toast('已加载 ' + fmtMonthDay(newDate) + ' 的历史复盘数据');
     } else {
-      // 无历史数据：清空指数卡片，从最近的历史记录复制模块三（持仓）和模块四（心态）数据
+      // 无历史数据：清空市场行情(breadth)和指数卡片，从最近的历史记录仅复制模块三（持仓）和模块四（心态）
       clearIndexCards();
+      // 清空市场行情数据（11档涨跌分布、涨跌家数、成交额等全部置空，不继承最近一天）
+      saveBreadth({
+        bins: new Array(BREADTH_DEFAULT.bins.length).fill(''),
+        upTotal: '',
+        downTotal: '',
+        turnover: '',
+        turnoverDelta: '',
+        predictTurnover: '',
+        avg30: '',
+        avg30Delta: ''
+      });
       // 找离 newDate 最近的历史记录（可前可后，取日期差绝对值最小的；差值相等取前一天）
       let nearestSnap = null;
       let minDiff = Infinity;
