@@ -7035,18 +7035,23 @@ function viewHistoryDetail(idx, evt) {
       const changeHtml = changeVal != null
         ? `<span style="${changeVal >= 0 ? 'color:var(--red)' : 'color:var(--green)'}">${changeVal >= 0 ? '+' : ''}${changeVal.toFixed(2)}%</span>`
         : '<span style="color:var(--text-dim)">—</span>';
-      // 现价（颜色跟随涨跌幅）
+      // 现价颜色跟随涨跌幅
       const priceColor = changeVal != null ? (changeVal >= 0 ? 'var(--red)' : 'var(--green)') : 'var(--text-dim)';
+      // 现价：放在卡片中线左侧，右边缘距中线6px
       const dayPriceHtml = s.dayPrice
-        ? `<span style="color:${priceColor};font-size:14px;margin-left:10px">现价 ${escapeHtml(s.dayPrice)}</span>`
+        ? `<span style="color:${priceColor};font-size:14px;position:absolute;left:50%;transform:translateX(-100%);margin-left:-6px;white-space:nowrap">现价 ${escapeHtml(s.dayPrice)}</span>`
         : '';
-      // tag 标签（核心资产/交易性机会/防守配置）
+      // 涨跌幅：左边缘与卡片中线平齐，距现价6px
+      const changePosHtml = changeVal != null
+        ? `<span style="color:${changeVal >= 0 ? 'var(--red)' : 'var(--green)'};font-size:14px;position:absolute;left:50%;margin-left:6px;white-space:nowrap">${changeVal >= 0 ? '+' : ''}${changeVal.toFixed(2)}%</span>`
+        : '<span style="color:var(--text-dim);font-size:14px;position:absolute;left:50%;margin-left:6px;white-space:nowrap">—</span>';
+      // tag 标签（核心资产/交易性机会/防守配置）：最右边右对齐
       const tagText = s.tag || '';
       const tagHtml = tagText
-        ? `<span style="display:inline-block;margin-left:10px;padding:1px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-weight:600;color:var(--text-dim)">${escapeHtml(tagText)}</span>`
-        : '';
+        ? `<span style="display:inline-block;padding:1px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-weight:600;color:var(--text-dim);flex:0 0 auto;text-align:right;margin-left:auto;white-space:nowrap">${escapeHtml(tagText)}</span>`
+        : '<span style="flex:0 0 auto;margin-left:auto"></span>';
       html += `<div style="background:var(--panel-2);padding:10px 14px;border-radius:6px;margin-bottom:8px">`;
-      html += `<div class="detail-item"><strong style="font-size:15px">${escapeHtml(s.name || '未命名')}</strong>${dayPriceHtml} ${changeHtml} ${tagHtml}</div>`;
+      html += `<div class="detail-item" style="display:flex;align-items:center;position:relative"><strong style="font-size:15px;flex:0 1 auto">${escapeHtml(s.name || '未命名')}</strong>${dayPriceHtml}${changePosHtml}${tagHtml}</div>`;
       html += `<div class="detail-item" style="margin-top:4px;white-space:pre-wrap">${escapeHtml(s.analysis || '（无复盘分析）')}</div>`;
       if (s.plan) {
         html += `<div class="detail-item" style="margin-top:4px;white-space:pre-wrap;background:var(--blue-bg);padding:6px 10px;border-radius:4px"><strong style="color:var(--blue)">计划</strong>：${escapeHtml(s.plan)}</div>`;
