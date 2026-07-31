@@ -322,7 +322,7 @@
     gap: 8px;
     margin-bottom: 10px;
     flex-wrap: nowrap;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
   }
   .stock-card .stock-name-input {
@@ -401,8 +401,8 @@
   .stock-card .stock-tag-select option { color: var(--text); }
   .stock-card .stock-remove {
     position: absolute;
-    top: -4px;
-    right: 2px;
+    top: -19px;
+    right: -18px;
     background: none;
     border: none;
     color: var(--text-dim);
@@ -415,8 +415,8 @@
   /* 拖动排序手柄：仅长按触发，位于左上角 */
   .stock-card .stock-drag-handle {
     position: absolute;
-    top: 1px;
-    left: 4px;
+    top: -14px;
+    left: -16px;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -492,15 +492,15 @@
   /* 新增交易计划加号按钮：绝对定位在 header 正中间靠上 */
   .btn-add-plan {
     position: absolute;
-    top: -2px;
+    top: -12px;
     left: 50%;
     transform: translateX(-50%);
     margin: 0;
     padding: 0;
-    width: 22px;
-    height: 22px;
-    font-size: 16px;
-    line-height: 20px;
+    width: 18px;
+    height: 18px;
+    font-size: 13px;
+    line-height: 1;
     color: var(--text-dim);
     background: transparent;
     border: 1px solid var(--border);
@@ -510,6 +510,9 @@
     font-family: inherit;
     white-space: nowrap;
     z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .btn-add-plan:hover { border-color: var(--blue); color: var(--blue); }
 
