@@ -7325,8 +7325,8 @@ function editTitleDate() {
       if (snap.stocks && snap.stocks.length > 0) {
         sd.stocks = snap.stocks.map(s => ({
           name: s.name || '',
-          change: null,
-          dayPrice: '',
+          change: s.change,
+          dayPrice: s.dayPrice || '',
           tag: s.tag || '',
           volume: s.volume || '',
           analysis: s.analysis || '',
