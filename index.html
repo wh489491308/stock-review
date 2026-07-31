@@ -6930,8 +6930,18 @@ function viewHistoryDetail(idx, evt) {
       const changeHtml = changeVal != null
         ? `<span style="${changeVal >= 0 ? 'color:var(--red)' : 'color:var(--green)'}">${changeVal >= 0 ? '+' : ''}${changeVal.toFixed(2)}%</span>`
         : '<span style="color:var(--text-dim)">—</span>';
+      // 现价（颜色跟随涨跌幅）
+      const priceColor = changeVal != null ? (changeVal >= 0 ? 'var(--red)' : 'var(--green)') : 'var(--text-dim)';
+      const dayPriceHtml = s.dayPrice
+        ? `<span style="color:${priceColor};font-size:14px;margin-left:10px">现价 ${escapeHtml(s.dayPrice)}</span>`
+        : '';
+      // tag 标签（核心资产/交易性机会/防守配置）
+      const tagText = s.tag || '';
+      const tagHtml = tagText
+        ? `<span style="display:inline-block;margin-left:10px;padding:1px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-weight:600;color:var(--text-dim)">${escapeHtml(tagText)}</span>`
+        : '';
       html += `<div style="background:var(--panel-2);padding:10px 14px;border-radius:6px;margin-bottom:8px">`;
-      html += `<div class="detail-item"><strong style="font-size:15px">${escapeHtml(s.name || '未命名')}</strong>  ${changeHtml}</div>`;
+      html += `<div class="detail-item"><strong style="font-size:15px">${escapeHtml(s.name || '未命名')}</strong>${dayPriceHtml} ${changeHtml} ${tagHtml}</div>`;
       html += `<div class="detail-item" style="margin-top:4px;white-space:pre-wrap">${escapeHtml(s.analysis || '（无复盘分析）')}</div>`;
       if (s.plan) {
         html += `<div class="detail-item" style="margin-top:4px;white-space:pre-wrap;background:var(--blue-bg);padding:6px 10px;border-radius:4px"><strong style="color:var(--blue)">计划</strong>：${escapeHtml(s.plan)}</div>`;
