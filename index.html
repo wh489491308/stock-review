@@ -489,20 +489,22 @@
     margin-top: 6px;
   }
 
-  /* 新增交易计划按钮：绝对定位在 header 行正中间，与拖拽手柄/叉叉垂直对齐 */
+  /* 新增交易计划加号按钮：绝对定位在 header 正中间靠上 */
   .btn-add-plan {
     position: absolute;
-    top: 10px;
+    top: -2px;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
     margin: 0;
-    padding: 1px 10px;
-    font-size: 12px;
-    line-height: 16px;
+    padding: 0;
+    width: 22px;
+    height: 22px;
+    font-size: 16px;
+    line-height: 20px;
     color: var(--text-dim);
     background: transparent;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: 50%;
     cursor: pointer;
     text-align: center;
     font-family: inherit;
@@ -512,27 +514,33 @@
   .btn-add-plan:hover { border-color: var(--blue); color: var(--blue); }
 
   /* 下拉菜单 */
+  /* 新增交易计划下拉菜单：浮层样式 */
   .plan-menu {
     display: none;
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
     flex-direction: column;
-    gap: 4px;
-    margin-top: 6px;
-    align-items: center;
+    gap: 2px;
+    z-index: 100;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    min-width: 120px;
   }
   .plan-menu.show { display: flex; }
   .plan-menu-row {
     display: flex;
-    gap: 6px;
-    justify-content: center;
-    width: 100%;
+    flex-direction: column;
+    gap: 2px;
   }
   .plan-menu .plan-opt {
-    flex: 1;
-    max-width: 96px;
-    min-width: 86px;
     text-align: center;
-    font-size: 11px;
-    padding: 4px 0;
+    font-size: 12px;
+    padding: 6px 16px;
     border: 1px solid var(--border);
     border-radius: 4px;
     color: var(--text);
@@ -3432,16 +3440,14 @@ function renderStockCards() {
             `<div class="stock-drag-bar"></div>` +
           `</div>` +
           tagHtml +
-          `<button class="btn-add-plan" onclick="showPlanMenu(${i})">＋ 新增交易计划</button>` +
-        `</div>` +
-        `<div class="plan-menu" id="planMenu_${i}">` +
-          `<div class="plan-menu-row">` +
-            `<div class="plan-opt" onclick="addPlan(${i},'sell1')">放飞-目标价</div>` +
-            `<div class="plan-opt" onclick="addPlan(${i},'sell2')">放飞-砖型图</div>` +
-          `</div>` +
-          `<div class="plan-menu-row">` +
-            `<div class="plan-opt" onclick="addPlan(${i},'stop1')">止损-破位</div>` +
-            `<div class="plan-opt" onclick="addPlan(${i},'stop2')">止损-黄白线</div>` +
+          `<button class="btn-add-plan" onclick="showPlanMenu(${i})" title="新增交易计划">＋</button>` +
+          `<div class="plan-menu" id="planMenu_${i}">` +
+            `<div class="plan-menu-row">` +
+              `<div class="plan-opt" onclick="addPlan(${i},'sell1')">放飞-目标价</div>` +
+              `<div class="plan-opt" onclick="addPlan(${i},'sell2')">放飞-砖型图</div>` +
+              `<div class="plan-opt" onclick="addPlan(${i},'stop1')">止损-破位</div>` +
+              `<div class="plan-opt" onclick="addPlan(${i},'stop2')">止损-黄白线</div>` +
+            `</div>` +
           `</div>` +
         `</div>` +
         plansHtml +
