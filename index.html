@@ -5100,7 +5100,8 @@ const ALL_BATCH_SECTIONS = {
   '#市场行情#': 'breadth',
   '#主力资金#': 'fund',
   '#行业板块#': 'fund2',
-  '#概念板块#': 'fund3'
+  '#概念板块#': 'fund3',
+  '#个股涨跌#': 'stocks'
 };
 /* 模块一"📋 批量录入"按钮两段式交互：
    第一次点击：复制 AI 识图提示词到剪贴板，toast 提示"已复制提示词"
@@ -5141,10 +5142,18 @@ const ALL_BATCH_PROMPT = `整体执行规则：
 板块名涨跌幅，板块名涨跌幅……
 #结束#
 
+数据五：个股涨跌（取自持仓个股行情数据）
+先输出活跃市值百分比，再依次输出每只持仓个股的名称、现价、涨跌幅；
+每只个股3项用中文逗号隔开：股票名，现价XX，涨跌幅XX%；个股之间也用中文逗号分隔；
+固定输出格式：
+#个股涨跌#
+活跃市值±X.XX%，股票名，现价XX，涨跌幅±X.XX%，股票名，现价XX，涨跌幅±X.XX%……
+#结束#
+
 硬性约束（换设备永久生效）
-1. 四段内容顺序固定：市场行情→主力资金→行业板块→概念板块，不可调换；
+1. 五段内容顺序固定：市场行情→主力资金→行业板块→概念板块→个股涨跌，不可调换；
 2. 所有标签#xxx#、末尾#结束#必须完整保留，不能删减、修改文字；
-3. 禁止额外增加解读、注释、说明文字，只输出四段格式化内容；
+3. 禁止额外增加解读、注释、说明文字，只输出五段格式化内容；
 4. 图片顺序颠倒时自动识别对应内容归类，不会打乱输出格式；
 5. 严格遵守数值提取规则，换算、标点、分隔符全程统一标准。`;
 function handleAllBatchClick() {
@@ -5188,7 +5197,7 @@ function openAllBatchModal() {
   // 显示将录入到的日期
   const dateStr = latestTradingDay();
   if (status) {
-    status.textContent = '将录入到：' + dateStr + '（市场行情 + 资金三表）';
+    status.textContent = '将录入到：' + dateStr + '（市场行情 + 资金三表 + 个股涨跌）';
     status.className = 'bb-status';
   }
   modal.classList.add('show');
@@ -5205,6 +5214,7 @@ function parseAllBatchText(text) {
     fund:  { in:[], out:[], invalid:[] },
     fund2: { in:[], out:[], invalid:[] },
     fund3: { in:[], out:[], invalid:[] },
+    stocks: { activeMv: null, items: [], unknown: [] },
     unknown: []
   };
   if (!text) return result;
@@ -5239,6 +5249,46 @@ function parseAllBatchText(text) {
       // 市场行情段：把段内中文逗号还原为换行后交给 _parseBreadthBatchLine
       // _parseBreadthBatchLine 本身支持 [,，;；\n\r] 分隔，所以直接传 seg 即可
       breadthRaw += (breadthRaw ? '\n' : '') + seg;
+    } else if (kind === 'stocks') {
+      // 个股涨跌段：格式 "活跃市值+3.35%，股票名，现价65.71，涨跌幅+1.86%，..."
+      // 用逗号分割，逐项识别
+      const items = seg.split(/[,，]+/).map(s => s.trim()).filter(Boolean);
+      let i = 0;
+      while (i < items.length) {
+        const item = items[i];
+        // 活跃市值
+        const mvMatch = item.match(/^活跃市值\s*([+-]?\d+(?:\.\d+)?)\s*%?$/);
+        if (mvMatch) {
+          result.stocks.activeMv = parseFloat(mvMatch[1]);
+          i++;
+          continue;
+        }
+        // 个股：股票名后面跟 "现价XX" 和 "涨跌幅XX"
+        // 股票名本身不含"现价"或"涨跌幅"关键字
+        if (item.includes('现价') || item.includes('涨跌幅')) {
+          i++;
+          continue; // 跳过孤立的现价/涨跌幅项
+        }
+        // 尝试匹配：股票名，现价XX，涨跌幅XX
+        const priceItem = items[i + 1];
+        const changeItem = items[i + 2];
+        if (priceItem && changeItem) {
+          const priceMatch = priceItem.match(/^现价\s*([+-]?\d+(?:\.\d+)?)\s*%?$/);
+          const changeMatch = changeItem.match(/^涨跌幅\s*([+-]?\d+(?:\.\d+)?)\s*%?$/);
+          if (priceMatch && changeMatch) {
+            result.stocks.items.push({
+              name: item,
+              dayPrice: priceMatch[1],
+              change: parseFloat(changeMatch[1])
+            });
+            i += 3;
+            continue;
+          }
+        }
+        // 无法识别
+        result.stocks.unknown.push(item);
+        i++;
+      }
     } else {
       // 表一/二/三：段内多条数据用中文/英文逗号分隔
       const items = seg.split(/[,，]+/).map(s => s.trim()).filter(Boolean);
@@ -5335,10 +5385,41 @@ function commitAllBatch() {
     renderFundTable2();
     renderFundTable3();
   }
+  // 3. 个股涨跌（活跃市值 + 持仓个股现价/涨跌幅）
+  if (parsed.stocks.activeMv != null || parsed.stocks.items.length > 0) {
+    if (!store[dateStr]) store[dateStr] = {};
+    // 活跃市值
+    if (parsed.stocks.activeMv != null) {
+      store[dateStr].activeMv = parsed.stocks.activeMv;
+      parts.push(`活跃市值 ${parsed.stocks.activeMv}%`);
+    }
+    // 个股：按股票名匹配持仓，填入现价和涨跌幅
+    if (parsed.stocks.items.length > 0 && store[dateStr].stocks && store[dateStr].stocks.length > 0) {
+      let matched = 0;
+      const unmatched = [];
+      parsed.stocks.items.forEach(item => {
+        const stock = store[dateStr].stocks.find(s => s.name === item.name);
+        if (stock) {
+          stock.dayPrice = item.dayPrice;
+          stock.change = item.change;
+          matched++;
+        } else {
+          unmatched.push(item.name);
+        }
+      });
+      parts.push(`个股 ${matched}/${parsed.stocks.items.length} 匹配`);
+      if (unmatched.length > 0) {
+        parts.push(`未匹配：${unmatched.join('、')}`);
+      }
+    }
+    saveStore(store);
+    renderStockCards();
+    renderFundTable(); // 活跃市值变了，表头需刷新
+  }
   // 状态提示
   if (parts.length === 0) {
     if (status) {
-      status.textContent = '⚠️ 未识别到任何数据，请检查格式（需要 #市场行情# / #主力资金# / #行业板块# / #概念板块# 标记）';
+      status.textContent = '⚠️ 未识别到任何数据，请检查格式（需要 #市场行情# / #主力资金# / #行业板块# / #概念板块# / #个股涨跌# 标记）';
       status.className = 'bb-status err';
     }
     return;
@@ -7380,10 +7461,11 @@ latestTradingDay = function() {
       <span class="bb-close" onclick="closeAllBatchModal()" title="关闭">×</span>
     </div>
     <div class="bb-tip">
-      一次性粘贴<strong>市场行情 + 表一/表二/表三</strong>数据，用 <code>#市场行情#</code> / <code>#主力资金#</code> / <code>#行业板块#</code> / <code>#概念板块#</code> 标记起始，<code>#结束#</code> 标记结束。<br>
+      一次性粘贴<strong>市场行情 + 表一/表二/表三 + 个股涨跌</strong>数据，用 <code>#市场行情#</code> / <code>#主力资金#</code> / <code>#行业板块#</code> / <code>#概念板块#</code> / <code>#个股涨跌#</code> 标记起始，<code>#结束#</code> 标记结束。<br>
       段与段之间用<strong>中文逗号</strong>（或换行）隔开；段内多条数据也用中文逗号隔开。<br>
       市场行情格式：<code>标签值，标签值，...</code>（跌停/>7%/.../涨停/上涨/下跌/成交额/较上一日/30日均/平均差）；<br>
-      表一格式：<code>板块名+金额</code>（正=流入，负=流出）；表二/表三格式：<code>板块名+涨跌幅</code>（各取前6）。
+      表一格式：<code>板块名+金额</code>（正=流入，负=流出）；表二/表三格式：<code>板块名+涨跌幅</code>（各取前6）；<br>
+      个股涨跌格式：<code>活跃市值±X%，股票名，现价XX，涨跌幅±X%，...</code>（按持仓股票名自动匹配）。
     </div>
     <textarea class="bb-input" id="allBatchInput" style="min-height:72px"></textarea>
     <div class="bb-status" id="allBatchStatus"></div>
