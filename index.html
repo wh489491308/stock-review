@@ -2373,6 +2373,8 @@
     font-size: 15px;
     font-weight: 700;
     color: var(--text);
+    flex: 1;
+    text-align: left;
   }
   .plan-stock-row .psr-change {
     font-size: 12px;
@@ -2383,15 +2385,17 @@
   .plan-stock-row .psr-price {
     font-size: 15px;
     font-weight: 600;
-    margin-left: 45px;
+    flex: 1;
+    text-align: center;
   }
   .plan-stock-row .psr-price.up { color: var(--red); }
   .plan-stock-row .psr-price.down { color: var(--green); }
   .plan-stock-row .psr-tag {
     color: var(--text-dim);
     font-size: 13px;
-    margin-left: 60px;
     font-weight: 600;
+    flex: 1;
+    text-align: right;
   }
   .plan-stock-row .psr-tag-empty {
     color: var(--text-dim);
@@ -5922,6 +5926,9 @@ function renderPlanView() {
     // 按排序优先级排列：条件单 > 尾盘 > 尾盘直接肘 > 尾盘等一天
     allPlans.sort((a, b) => a.sortOrder - b.sortOrder);
 
+    // 只显示有交易计划的个股
+    if (allPlans.length === 0) return null;
+
     // 构建交易计划 HTML：方式移到第二行第一列，颜色跟随框色
     let planRowsHtml = '';
     allPlans.forEach(sp => {
@@ -5954,15 +5961,24 @@ function renderPlanView() {
 
     return `<div class="plan-stock-row">
       <div class="psr-head">
-        <div>
-          <span class="psr-name">${escapeHtml(s.name || '未命名')}</span>
-          ${dayPrice ? `<span class="psr-price ${priceCls}">${escapeHtml(dayPrice)}</span>` : ''}
-          ${s.tag ? `<span class="psr-tag">${escapeHtml(s.tag)}</span>` : `<span class="psr-tag psr-tag-empty">-</span>`}
-        </div>
+        <span class="psr-name">${escapeHtml(s.name || '未命名')}</span>
+        ${dayPrice ? `<span class="psr-price ${priceCls}">${escapeHtml(dayPrice)}</span>` : `<span class="psr-price"></span>`}
+        ${s.tag ? `<span class="psr-tag">${escapeHtml(s.tag)}</span>` : `<span class="psr-tag psr-tag-empty">-</span>`}
       </div>
-      ${planRowsHtml || '<div class="pp-plan-empty">暂无交易计划</div>'}
+      ${planRowsHtml}
     </div>`;
-  }).join('');
+  }).filter(Boolean).join('');
+
+  if (!rows) {
+    list.innerHTML = `<div class="plan-day-card">
+      ${zoneTextHtml}
+      <div class="plan-empty">
+        <span class="empty-icon">📋</span>
+        <p>暂无符合条件的交易计划</p>
+      </div>
+    </div>`;
+    return;
+  }
 
   list.innerHTML = `<div class="plan-day-card">
     ${zoneTextHtml}
