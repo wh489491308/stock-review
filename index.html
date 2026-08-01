@@ -2235,15 +2235,20 @@
     position: absolute;
     top: 12px;
     right: 50px;
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 20px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    color: var(--text);
+    font-size: 16px;
     cursor: pointer;
-    transition: color .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color .15s, color .15s;
   }
-  #historyDetailModal .detail-screenshot-btn:hover { color: var(--text); }
-  #historyDetailModal .detail-screenshot-btn.active { color: var(--blue); }
+  #historyDetailModal .detail-screenshot-btn:hover { border-color: var(--blue); color: var(--blue); }
   #historyDetailModal .detail-date {
     font-size: 20px;
     font-weight: 700;
