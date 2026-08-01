@@ -697,6 +697,7 @@
 
   /* 大盘指数 */
   .index-section {
+    position: relative;
     margin-top: 0;
   }
 
@@ -2586,9 +2587,9 @@
     </div>
   </div>
   <div class="index-section">
+    <span class="breadth-edit-icon" id="refreshIndexBtn" onclick="fetchIndexData()" title="刷新指数">↻</span>
     <div class="index-header">
       <label>板块指数：</label>
-      <span class="mv-edit" id="refreshIndexBtn" onclick="fetchIndexData()" title="刷新指数">↻</span>
     </div>
     <div class="index-grid" id="indexGrid">
       <div class="index-card" data-code="sh000001">
