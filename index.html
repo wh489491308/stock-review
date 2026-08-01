@@ -1984,6 +1984,15 @@
     font-family: inherit;
     outline: none;
   }
+  /* 历史日期选框强制与个股 text 选框同尺寸 */
+  #historyDateFilter {
+    box-sizing: border-box;
+    width: 166px;
+    height: 38px;
+  }
+  #historyDateFilter::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
   /* date 输入框剥离原生样式，与 text 输入框完全一致 */
   #historyDateFilter {
     -webkit-appearance: none;
