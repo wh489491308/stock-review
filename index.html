@@ -3050,14 +3050,24 @@ function editActiveMvInline() {
   const input = document.getElementById('activeMvInput');
   input.focus();
   input.select();
-  // 如果是历史日期，同步开启指数编辑
-  if (isHistoricalDate(t)) { enableIndexEditMode(); }
+  // 同步开启指数编辑（所有日期统一行为）
+  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
+    if (!card.querySelector('input')) { editIndexCard(card); }
+  });
   // 回车或失焦保存，Esc 取消
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); saveActiveMvInline(); }
-    else if (e.key === 'Escape') { disableIndexEditMode(); renderTiming(); }
+    else if (e.key === 'Escape') { cancelActiveMvEdit(); }
   });
   input.addEventListener('blur', () => { saveActiveMvInline(); });
+}
+
+function cancelActiveMvEdit() {
+  // 恢复所有指数卡片显示态（不保存编辑内容）
+  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
+    if (card.querySelector('input')) { restoreIndexCardDisplay(card); }
+  });
+  renderTiming();
 }
 
 function saveActiveMvInline() {
@@ -3067,8 +3077,15 @@ function saveActiveMvInline() {
   const t = latestTradingDay();
   if (!store[t]) store[t] = { activeMv: null, thought: '', fund: {}, fund2: {}, fund3: {} };
   store[t].activeMv = v === '' ? null : parseFloat(v);
+  // 保存指数编辑（如果有的话）
+  let hasIndexEdit = false;
+  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
+    if (card.querySelector('input')) { saveIndexCardEdit(card); hasIndexEdit = true; }
+  });
+  if (hasIndexEdit && store[t]) {
+    store[t].indexData = getIndexSnapshot();
+  }
   saveStore(store);
-  disableIndexEditMode();
   renderTiming();
   // 同步更新三个表格表头
   renderFundTable();
@@ -7450,13 +7467,12 @@ function editTitleDate() {
       }
     }
 
-    // 历史日期：隐藏刷新按钮；最新日期：显示刷新按钮，清理可能的编辑态
+    // 历史日期：隐藏刷新按钮；最新日期：显示刷新按钮
     const refreshBtn = document.getElementById('refreshIndexBtn');
     if (isHistoricalDate(newDate)) {
       if (refreshBtn) refreshBtn.style.display = 'none';
     } else {
       if (refreshBtn) refreshBtn.style.display = '';
-      disableIndexEditMode();
     }
 
     // 重新渲染所有模块
