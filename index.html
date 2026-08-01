@@ -1984,29 +1984,18 @@
     font-family: inherit;
     outline: none;
   }
-  /* 历史日期选框强制与个股 text 选框同尺寸 */
-  #historyDateFilter {
-    box-sizing: border-box;
-    width: 166px;
-    height: 38px;
-  }
-  #stockSearchInput {
+  /* 两个选框尺寸统一 */
+  #historyDateFilter, #stockSearchInput {
     box-sizing: border-box;
     width: 166px;
   }
-  #historyDateFilter::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-  }
-  /* date 输入框剥离原生样式，与 text 输入框完全一致 */
   #historyDateFilter {
     -webkit-appearance: none;
     appearance: none;
-    width: 160px;
   }
   #historyDateFilter::-webkit-calendar-picker-indicator {
     cursor: pointer;
     opacity: 0.5;
-    margin-left: 4px;
   }
   #historyView .history-filter input:focus, #stockView .history-filter input:focus { border-color: var(--blue); }
 
