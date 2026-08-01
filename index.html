@@ -3054,12 +3054,21 @@ function editActiveMvInline() {
   document.querySelectorAll('#indexGrid .index-card').forEach(card => {
     if (!card.querySelector('input')) { editIndexCard(card); }
   });
-  // 回车或失焦保存，Esc 取消
+  // 回车保存，Esc 取消
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); saveActiveMvInline(); }
     else if (e.key === 'Escape') { cancelActiveMvEdit(); }
   });
-  input.addEventListener('blur', () => { saveActiveMvInline(); });
+  // 失焦时延迟判断：如果焦点移到了指数输入框则不保存，否则保存
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      const focused = document.activeElement;
+      const isIndexInput = focused && focused.closest && focused.closest('#indexGrid .index-card');
+      if (!isIndexInput && document.getElementById('activeMvInput')) {
+        saveActiveMvInline();
+      }
+    }, 150);
+  });
 }
 
 function cancelActiveMvEdit() {
