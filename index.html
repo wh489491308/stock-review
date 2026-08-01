@@ -6141,16 +6141,19 @@ function enableIndexEditMode() {
 
 /* 退出指数编辑模式：保存所有正在编辑的卡片并恢复显示 */
 function disableIndexEditMode() {
+  let hasEdited = false;
   document.querySelectorAll('#indexGrid .index-card').forEach(card => {
-    if (card.querySelector('input')) { saveIndexCardEdit(card); }
+    if (card.querySelector('input')) { saveIndexCardEdit(card); hasEdited = true; }
     card.classList.remove('editable');
     card.onclick = null;
   });
-  // 将当前 DOM 中的指数数据同步到 store 快照
-  const t = latestTradingDay();
-  if (store[t]) {
-    store[t].indexData = getIndexSnapshot();
-    saveStore(store);
+  // 只有实际编辑过指数才将 DOM 数据同步到 store 快照
+  if (hasEdited) {
+    const t = latestTradingDay();
+    if (store[t]) {
+      store[t].indexData = getIndexSnapshot();
+      saveStore(store);
+    }
   }
 }
 
