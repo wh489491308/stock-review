@@ -2166,24 +2166,40 @@
   }
   .history-empty .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
 
-  /* ===== 保存按钮 ===== */
-  #saveBtn {
+  /* ===== 右上角操作按钮组 ===== */
+  #topActionBar {
     position: fixed;
     top: 14px;
     right: 14px;
     z-index: 50;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  #topActionBar button {
     border: 1px solid var(--border);
     background: var(--panel-2);
     color: var(--text);
-    font-size: 18px;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     box-shadow: 0 2px 10px rgba(0,0,0,.4);
+    transition: border-color .15s, color .15s;
+  }
+  #topActionBar button:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ===== 保存按钮（择时模块内） ===== */
+  #saveBtn {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
     transition: border-color .15s, color .15s;
   }
   #saveBtn:hover { border-color: var(--green); color: var(--green); }
@@ -2571,15 +2587,19 @@
 <body>
 
 <!-- 导��长图 -->
-<button id="saveBtn" title="保存复盘" onclick="saveReviewSnapshot()">💾</button>
+<!-- 右上角操作按钮组 -->
+<div id="topActionBar">
+  <button id="promptBtn" title="复制AI识图提示词" onclick="copyAllBatchPrompt()">🔖 提示词</button>
+  <button id="batchBtn" title="批量录入" onclick="openAllBatchModal()">录入</button>
+</div>
 
 <div id="mainView">
-<h1>📝 <span class="date" id="todayDate" title="点击修改日期" onclick="editTitleDate()" style="cursor:pointer;font-size:inherit;font-weight:inherit"></span> 每日股票复盘</h1>
+<h1>📝 <span class="date" id="todayDate" title="点击修改日期" onclick="editTitleDate()" style="cursor:pointer;font-size:inherit;font-weight:inherit"></span> 股票复盘</h1>
 
 <!-- 择时模块 -->
 <section class="module">
   <div class="module-title">一、择时
-    <button class="btn btn-sm btn-ghost" id="allBatchBtn" onclick="handleAllBatchClick()" title="第一次点击复制提示词，第二次点击进入输入界面" style="margin-left:auto">📋 批量录入</button>
+    <button id="saveBtn" title="保存复盘" onclick="saveReviewSnapshot()" style="margin-left:auto">💾</button>
   </div>
   <div class="timing-row">
     <div class="field">
@@ -2634,7 +2654,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">主力资金</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn" onclick="toggleEditMode()">编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn" onclick="toggleEditMode()">✏️ 编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -2650,7 +2670,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">行业板块</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn2" onclick="toggleEditMode()">编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn2" onclick="toggleEditMode()">✏️ 编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -2666,7 +2686,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">概念板块</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn3" onclick="toggleEditMode()">编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn3" onclick="toggleEditMode()">✏️ 编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -5132,10 +5152,6 @@ const ALL_BATCH_SECTIONS = {
   '#概念板块#': 'fund3',
   '#个股涨跌#': 'stocks'
 };
-/* 模块一"📋 批量录入"按钮两段式交互：
-   第一次点击：复制 AI 识图提示词到剪贴板，toast 提示"已复制提示词"
-   第二次点击：进入批量录入弹窗 */
-let __allBatchFirstClick = true;
 const ALL_BATCH_PROMPT = `整体执行规则：
 无论五张图片上传顺序如何，自动识别五张图对应的五类数据源：
 图1=A股当日大盘总览图、图2=行业+概念主力资金流向图、图3=行业板块涨幅榜（上涨板块）、图4=行业板块跌幅榜、图5=个股涨跌；
@@ -5186,26 +5202,18 @@ const ALL_BATCH_PROMPT = `整体执行规则：
 3. 禁止额外增加解读、注释、说明文字，只输出五段格式化内容；
 4. 图片顺序颠倒时自动识别对应内容归类，不会打乱输出格式；
 5. 严格遵守数值提取规则，换算、标点、分隔符全程统一标准。`;
-function handleAllBatchClick() {
-  if (__allBatchFirstClick) {
-    // 第一次点击：复制提示词
-    const text = ALL_BATCH_PROMPT;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        toast('已复制提示词');
-      }).catch(() => {
-        // 降级方案
-        fallbackCopy(text);
-      });
-    } else {
+/* 复制AI识图提示词到剪贴板 */
+function copyAllBatchPrompt() {
+  const text = ALL_BATCH_PROMPT;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      toast('已复制提示词');
+    }).catch(() => {
       fallbackCopy(text);
-    }
-    __allBatchFirstClick = false;
-    return;
+    });
+  } else {
+    fallbackCopy(text);
   }
-  // 第二次点击：进入输入界面
-  __allBatchFirstClick = true;
-  openAllBatchModal();
 }
 function fallbackCopy(text) {
   const ta = document.createElement('textarea');
@@ -5801,14 +5809,17 @@ function switchTab(tab) {
   const stockView = document.getElementById('stockView');
   const saveBtn = document.getElementById('saveBtn');
   const planExportBtn = document.getElementById('planExportBtn');
+  const topActionBar = document.getElementById('topActionBar');
   const bottomBtns = document.querySelectorAll('#bottomBar .menu-btn');
 
   bottomBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   saveBtn.style.display = 'none';
+  if (topActionBar) topActionBar.style.display = 'none';
   if (planExportBtn) planExportBtn.style.display = 'none';
 
   if (tab === 'review') {
     saveBtn.style.display = '';
+    if (topActionBar) topActionBar.style.display = '';
   } else if (tab === 'plan') {
     if (planExportBtn) planExportBtn.style.display = 'flex';
   }
