@@ -5768,7 +5768,20 @@ function saveHistory(arr) {
 }
 
 /* 切换复盘/历史视图 */
+// 各 tab 滚动位置记忆
+var __tabScrollPos = { review: 0, plan: 0, history: 0, stock: 0 };
+var __currentTab = 'review';
+
 function switchTab(tab) {
+  // 双击同一按钮：回到顶部
+  if (tab === __currentTab) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  // 保存离开前视图的滚动位置
+  __tabScrollPos[__currentTab] = window.scrollY;
+
   // 更新 slider 位置
   const btns = document.querySelectorAll('#bottomBar .menu-btn');
   let targetBtn = null;
@@ -5828,7 +5841,11 @@ function switchTab(tab) {
         }
       }
     }
+    // 恢复目标视图的滚动位置
+    window.scrollTo(0, __tabScrollPos[tab] || 0);
   });
+
+  __currentTab = tab;
 }
 
 
