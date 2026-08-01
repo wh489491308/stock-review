@@ -2656,7 +2656,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">主力资金</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn" onclick="toggleEditMode()">✏️ 编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn" onclick="toggleEditMode(1)">✏️ 编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -2672,7 +2672,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">行业板块</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn2" onclick="toggleEditMode()">✏️ 编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn2" onclick="toggleEditMode(2)">✏️ 编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -2688,7 +2688,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">概念板块</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn3" onclick="toggleEditMode()">✏️ 编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn3" onclick="toggleEditMode(3)">✏️ 编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -4412,18 +4412,20 @@ function getDayFund(dateStr, kind = 'fund') {
   return store[dateStr][kind];
 }
 
-/* 编辑模式：开启后单击即触发编辑，便于连续录入（所有子表共享一个编辑开关） */
-let editMode = false;
-function toggleEditMode() {
-  editMode = !editMode;
-  const btns = [document.getElementById('editModeBtn'), document.getElementById('editModeBtn2'), document.getElementById('editModeBtn3')];
-  const tables = [document.getElementById('fundTable'), document.getElementById('fundTable2'), document.getElementById('fundTable3')];
-  if (editMode) {
-    btns.forEach(b => { if (b) { b.textContent = '✏️ 退出'; b.classList.remove('btn-ghost'); } });
-    tables.forEach(t => { if (t) t.classList.add('edit-mode'); });
+/* 编辑模式：每个子表独立开关，单击即触发编辑 */
+function toggleEditMode(subId) {
+  const btn = document.getElementById('editModeBtn' + (subId > 1 ? subId : ''));
+  const table = document.getElementById('fundTable' + (subId > 1 ? subId : ''));
+  if (!btn || !table) return;
+  const isEditing = table.classList.contains('edit-mode');
+  if (isEditing) {
+    btn.textContent = '✏️ 编辑';
+    btn.classList.add('btn-ghost');
+    table.classList.remove('edit-mode');
   } else {
-    btns.forEach(b => { if (b) { b.textContent = '✏️ 编辑'; b.classList.add('btn-ghost'); } });
-    tables.forEach(t => { if (t) t.classList.remove('edit-mode'); });
+    btn.textContent = '✏️ 退出';
+    btn.classList.remove('btn-ghost');
+    table.classList.add('edit-mode');
   }
 }
 
@@ -4650,7 +4652,8 @@ function formatPct(v) {
    - 编辑模式：直接打开编辑弹窗
    - 普通模式：选中 + 联动高亮同名板块（再次点击同一格取消） */
 function onCellClick(el) {
-  if (editMode) {
+  const table = el.closest('table');
+  if (table && table.classList.contains('edit-mode')) {
     onCellDblClick(el);
     return;
   }
@@ -4693,7 +4696,9 @@ function clearSelection() {
 /* 表头���跃市值编辑（需进入编辑模式） */
 let editingMvDate = null;
 function editActiveMvInHead(dateStr) {
-  if (!editMode) return;  // 非编辑模式不响应
+  // 检查是否在编辑模式的表格中
+  const anyTableInEdit = document.querySelector('table.fund-table.edit-mode');
+  if (!anyTableInEdit) return;
   editingMvDate = dateStr;
   editingCell = null;
   const day = store[dateStr] || {};
