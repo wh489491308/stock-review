@@ -6131,20 +6131,27 @@ function isHistoricalDate(dateStr) {
   return dateStr < today && !isWeekend(dateStr);
 }
 
-/* 指数编辑模式：历史日期时，点击指数卡片可编辑三个数值 */
+/* 指数编辑模式：直接进入编辑状态，三个指数卡片同时显示输入框 */
 function enableIndexEditMode() {
   document.querySelectorAll('#indexGrid .index-card').forEach(card => {
     card.classList.add('editable');
-    card.onclick = function() { editIndexCard(this); };
+    editIndexCard(card);
   });
 }
 
-/* 退出指数编辑模式 */
+/* 退出指数编辑模式：保存所有正在编辑的卡片并恢复显示 */
 function disableIndexEditMode() {
   document.querySelectorAll('#indexGrid .index-card').forEach(card => {
+    if (card.querySelector('input')) { saveIndexCardEdit(card); }
     card.classList.remove('editable');
     card.onclick = null;
   });
+  // 将当前 DOM 中的指数数据同步到 store 快照
+  const t = latestTradingDay();
+  if (store[t]) {
+    store[t].indexData = getIndexSnapshot();
+    saveStore(store);
+  }
 }
 
 /* 编辑单个指数卡片：三个输入框（价格、涨跌幅%、涨跌点数） */
