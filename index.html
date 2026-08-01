@@ -2230,11 +2230,14 @@
     color: var(--text-dim);
     font-size: 20px;
     cursor: pointer;
+    transition: color .15s;
   }
   #historyDetailModal .detail-screenshot-btn:hover { color: var(--text); }
+  #historyDetailModal .detail-screenshot-btn.active { color: var(--blue); }
   #historyDetailModal .detail-date {
     font-size: 20px;
     font-weight: 700;
+    margin-top: 4px;
     margin-bottom: 20px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
@@ -2631,7 +2634,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">主力资金</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm" id="editModeBtn" onclick="toggleEditMode()">✏️ 进入编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn" onclick="toggleEditMode()">编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -2647,7 +2650,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">行业板块</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm" id="editModeBtn2" onclick="toggleEditMode()">✏️ 进入编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn2" onclick="toggleEditMode()">编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -2663,7 +2666,7 @@
     <div class="fund-sub-head">
       <span class="fund-sub-title">概念板块</span>
       <div class="fund-toolbar">
-        <button class="btn btn-sm" id="editModeBtn3" onclick="toggleEditMode()">✏️ 进入编辑</button>
+        <button class="btn btn-sm btn-ghost" id="editModeBtn3" onclick="toggleEditMode()">编辑</button>
       </div>
     </div>
     <div class="fund-table-wrap">
@@ -2988,7 +2991,7 @@ function renderActiveMv(dayData) {
   const zone = dayData.mvZone; // '空头区间' | '多头区间' | null
   const zoneCls = zone === '空头区间' ? 'zon-bear' : zone === '多头区间' ? 'zon-bull' : 'zon-empty';
   const zoneText = zone || '选区间';
-  const zoneHtml = `<span class="mv-zone ${zoneCls}" onclick="event.stopPropagation(); toggleMvZoneMenu(this, '${latestTradingDay()}')">${zoneText} ▾</span>`;
+  const zoneHtml = `<span class="mv-zone ${zoneCls}" onclick="event.stopPropagation(); toggleMvZoneMenu(this, '${latestTradingDay()}')">${zoneText}</span>`;
   if (mv != null && mv !== '') {
     const cls = mv >= 0 ? 'up' : 'down';
     const sign = mv >= 0 ? '+' : '';
@@ -4396,10 +4399,10 @@ function toggleEditMode() {
   const btns = [document.getElementById('editModeBtn'), document.getElementById('editModeBtn2'), document.getElementById('editModeBtn3')];
   const tables = [document.getElementById('fundTable'), document.getElementById('fundTable2'), document.getElementById('fundTable3')];
   if (editMode) {
-    btns.forEach(b => { if (b) { b.textContent = '✅ 退出编辑'; b.classList.remove('btn-ghost'); } });
+    btns.forEach(b => { if (b) { b.textContent = '退出'; b.classList.remove('btn-ghost'); } });
     tables.forEach(t => { if (t) t.classList.add('edit-mode'); });
   } else {
-    btns.forEach(b => { if (b) { b.textContent = '✏️ 进入编辑'; b.classList.add('btn-ghost'); } });
+    btns.forEach(b => { if (b) { b.textContent = '编辑'; b.classList.add('btn-ghost'); } });
     tables.forEach(t => { if (t) t.classList.remove('edit-mode'); });
   }
 }
@@ -7131,6 +7134,7 @@ function screenshotHistoryDetail() {
   const modal = document.getElementById('historyDetailModal');
   const closeBtn = panel.querySelector('.detail-close');
   const shotBtn = panel.querySelector('.detail-screenshot-btn');
+  if (shotBtn) shotBtn.classList.add('active');
   const closeDisp = closeBtn ? closeBtn.style.display : '';
   const shotDisp = shotBtn ? shotBtn.style.display : '';
   if (closeBtn) closeBtn.style.display = 'none';
@@ -7155,7 +7159,7 @@ function screenshotHistoryDetail() {
   }).then(canvas => {
     // 恢复样式
     if (closeBtn) closeBtn.style.display = closeDisp;
-    if (shotBtn) shotBtn.style.display = shotDisp;
+    if (shotBtn) { shotBtn.style.display = shotDisp; shotBtn.classList.remove('active'); }
     panel.style.maxHeight = panelMaxH;
     panel.style.overflow = panelOverflow;
     if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
@@ -7181,7 +7185,7 @@ function screenshotHistoryDetail() {
   }).catch(err => {
     // 恢复样式
     if (closeBtn) closeBtn.style.display = closeDisp;
-    if (shotBtn) shotBtn.style.display = shotDisp;
+    if (shotBtn) { shotBtn.style.display = shotDisp; shotBtn.classList.remove('active'); }
     panel.style.maxHeight = panelMaxH;
     panel.style.overflow = panelOverflow;
     if (modal) { modal.style.maxHeight = modalMaxH; modal.style.overflow = modalOverflow; }
