@@ -6180,8 +6180,11 @@ function editIndexCard(card) {
   // 解析现有值
   let priceVal = (priceText === '—') ? '' : priceText;
   let pctVal = '', amtVal = '';
-  const m = changeText.match(/^([+-]?[\d.]+)%\s*\(([+-]?[\d.]+)\)$/);
-  if (m) { pctVal = m[1]; amtVal = m[2]; }
+  // 格式1: "+0.72% (+27.57)"  格式2: "+0.72%"  格式3: "—"
+  const mFull = changeText.match(/^([+-]?[\d.]+)%\s*\(([+-]?[\d.]+)\)$/);
+  const mSimple = changeText.match(/^([+-]?[\d.]+)%$/);
+  if (mFull) { pctVal = mFull[1]; amtVal = mFull[2]; }
+  else if (mSimple) { pctVal = mSimple[1]; amtVal = ''; }
 
   // 保存到 dataset
   card.dataset.editName = name;
@@ -6198,14 +6201,6 @@ function editIndexCard(card) {
 
   const inputs = card.querySelectorAll('input');
   inputs.forEach(inp => {
-    inp.focus();
-    inp.setSelectionRange(inp.value.length, inp.value.length);
-    inp.addEventListener('blur', () => {
-      // 所有输入框都失去焦点时保存
-      setTimeout(() => {
-        if (!card.querySelector('input:focus')) saveIndexCardEdit(card);
-      }, 100);
-    });
     inp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
       else if (e.key === 'Escape') { e.preventDefault(); restoreIndexCardDisplay(card); }
