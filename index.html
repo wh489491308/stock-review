@@ -1984,16 +1984,16 @@
     font-family: inherit;
     outline: none;
   }
-  /* date 输入框强制与 text 输入框同尺寸 */
+  /* date 输入框剥离原生样式，与 text 输入框完全一致 */
   #historyDateFilter {
-    height: auto;
-    min-height: unset;
+    -webkit-appearance: none;
+    appearance: none;
     width: 160px;
-    box-sizing: border-box;
   }
   #historyDateFilter::-webkit-calendar-picker-indicator {
     cursor: pointer;
-    opacity: 0.6;
+    opacity: 0.5;
+    margin-left: 4px;
   }
   #historyView .history-filter input:focus, #stockView .history-filter input:focus { border-color: var(--blue); }
 
