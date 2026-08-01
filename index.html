@@ -6226,10 +6226,12 @@ function saveIndexCardEdit(card) {
   const priceDisplay = priceVal === '' ? '—' : priceVal;
   let changeDisplay = '—';
   if (pctVal !== '' || amtVal !== '') {
-    const p = pctVal !== '' ? pctVal : '0';
-    const a = amtVal !== '' ? amtVal : '0';
-    const pSign = parseFloat(p) >= 0 ? '+' : '';
-    const aSign = parseFloat(a) >= 0 ? '+' : '';
+    const pNum = parseFloat(pctVal);
+    const aNum = parseFloat(amtVal);
+    const p = isNaN(pNum) ? '0' : String(pNum);
+    const a = isNaN(aNum) ? '0' : String(aNum);
+    const pSign = pNum >= 0 ? '+' : '';
+    const aSign = aNum >= 0 ? '+' : '';
     changeDisplay = `${pSign}${p}% (${aSign}${a})`;
   }
 
@@ -6261,10 +6263,12 @@ function restoreIndexCardDisplay(card) {
 
   let changeDisplay = '—';
   if (pctVal !== '' || amtVal !== '') {
-    const p = pctVal !== '' ? pctVal : '0';
-    const a = amtVal !== '' ? amtVal : '0';
-    const pSign = parseFloat(p) >= 0 ? '+' : '';
-    const aSign = parseFloat(a) >= 0 ? '+' : '';
+    const pNum = parseFloat(pctVal);
+    const aNum = parseFloat(amtVal);
+    const p = isNaN(pNum) ? '0' : String(pNum);
+    const a = isNaN(aNum) ? '0' : String(aNum);
+    const pSign = pNum >= 0 ? '+' : '';
+    const aSign = aNum >= 0 ? '+' : '';
     changeDisplay = `${pSign}${p}% (${aSign}${a})`;
   }
 
