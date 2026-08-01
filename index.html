@@ -1984,6 +1984,17 @@
     font-family: inherit;
     outline: none;
   }
+  /* date 输入框强制与 text 输入框同尺寸 */
+  #historyDateFilter {
+    height: auto;
+    min-height: unset;
+    width: 160px;
+    box-sizing: border-box;
+  }
+  #historyDateFilter::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+  }
   #historyView .history-filter input:focus, #stockView .history-filter input:focus { border-color: var(--blue); }
 
   #historyView .history-actions, #stockView .history-actions {
@@ -2714,7 +2725,7 @@
     </div>
     <div class="history-filter">
       <span style="color:var(--text-dim);font-size:13px">筛选日期：</span>
-      <input type="text" id="historyDateFilter" oninput="renderHistoryList()" placeholder="如 2026-07-31">
+      <input type="date" id="historyDateFilter" onchange="renderHistoryList()">
       <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">清除</button>
     </div>
   </div>
