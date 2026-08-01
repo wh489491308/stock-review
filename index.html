@@ -1990,10 +1990,6 @@
     width: 166px;
     height: 36px;
   }
-  #historyDateFilter {
-    -webkit-appearance: none;
-    appearance: none;
-  }
   #historyDateFilter::-webkit-calendar-picker-indicator {
     cursor: pointer;
     opacity: 0.5;
@@ -2733,7 +2729,7 @@
     </div>
     <div class="history-filter">
       <span style="color:var(--text-dim);font-size:13px">筛选日期：</span>
-      <input type="date" id="historyDateFilter" onchange="renderHistoryList()">
+      <input type="text" id="historyDateFilter" placeholder="选择日期" onfocus="this.type='date';this.focus();" onchange="renderHistoryList()" onblur="if(!this.value)this.type='text'">
       <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">清除</button>
     </div>
   </div>
