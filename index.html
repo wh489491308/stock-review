@@ -3050,10 +3050,12 @@ function editActiveMvInline() {
   const input = document.getElementById('activeMvInput');
   input.focus();
   input.select();
+  // 如果是历史日期，同步开启指数编辑
+  if (isHistoricalDate(t)) { enableIndexEditMode(); }
   // 回车或失焦保存，Esc 取消
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); saveActiveMvInline(); }
-    else if (e.key === 'Escape') { renderTiming(); }
+    else if (e.key === 'Escape') { disableIndexEditMode(); renderTiming(); }
   });
   input.addEventListener('blur', () => { saveActiveMvInline(); });
 }
@@ -3066,6 +3068,7 @@ function saveActiveMvInline() {
   if (!store[t]) store[t] = { activeMv: null, thought: '', fund: {}, fund2: {}, fund3: {} };
   store[t].activeMv = v === '' ? null : parseFloat(v);
   saveStore(store);
+  disableIndexEditMode();
   renderTiming();
   // 同步更新三个表格表头
   renderFundTable();
@@ -7437,12 +7440,10 @@ function editTitleDate() {
       }
     }
 
-    // 历史日期：隐藏刷新按钮，启用指数编辑模式
-    // 今天/最近交易日：显示刷新按钮，禁用编辑模式
+    // 历史日期：隐藏刷新按钮；最新日期：显示刷新按钮，清理可能的编辑态
     const refreshBtn = document.getElementById('refreshIndexBtn');
     if (isHistoricalDate(newDate)) {
       if (refreshBtn) refreshBtn.style.display = 'none';
-      enableIndexEditMode();
     } else {
       if (refreshBtn) refreshBtn.style.display = '';
       disableIndexEditMode();
