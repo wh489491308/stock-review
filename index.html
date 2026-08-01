@@ -2588,6 +2588,7 @@
   </div>
   <div class="index-section">
     <span class="breadth-edit-icon" id="refreshIndexBtn" onclick="fetchIndexData()" title="刷新指数">↻</span>
+    <span class="breadth-edit-icon" id="indexEditBtn" onclick="enableIndexEditMode()" title="编辑指数" style="display:none;position:static;font-size:14px;padding:1px 3px;">✎</span>
     <div class="index-header">
       <label>板块指数：</label>
     </div>
@@ -3050,53 +3051,22 @@ function editActiveMvInline() {
   const input = document.getElementById('activeMvInput');
   input.focus();
   input.select();
-  // 同步开启指数编辑（所有日期统一行为）
-  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
-    if (!card.querySelector('input')) { editIndexCard(card); }
-  });
-  // 回车保存，Esc 取消
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); saveActiveMvInline(); }
-    else if (e.key === 'Escape') { cancelActiveMvEdit(); }
+    else if (e.key === 'Escape') { renderTiming(); }
   });
-  // 失焦时延迟判断：如果焦点移到了指数输入框则不保存，否则保存
-  input.addEventListener('blur', () => {
-    setTimeout(() => {
-      const focused = document.activeElement;
-      const isIndexInput = focused && focused.closest && focused.closest('#indexGrid .index-card');
-      if (!isIndexInput && document.getElementById('activeMvInput')) {
-        saveActiveMvInline();
-      }
-    }, 150);
-  });
-}
-
-function cancelActiveMvEdit() {
-  // 恢复所有指数卡片显示态（不保存编辑内容）
-  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
-    if (card.querySelector('input')) { restoreIndexCardDisplay(card); }
-  });
-  renderTiming();
+  input.addEventListener('blur', () => { saveActiveMvInline(); });
 }
 
 function saveActiveMvInline() {
   const input = document.getElementById('activeMvInput');
-  if (!input) return;  // 防止重复触发
+  if (!input) return;
   const v = input.value.trim();
   const t = latestTradingDay();
   if (!store[t]) store[t] = { activeMv: null, thought: '', fund: {}, fund2: {}, fund3: {} };
   store[t].activeMv = v === '' ? null : parseFloat(v);
-  // 保存指数编辑（如果有的话）
-  let hasIndexEdit = false;
-  document.querySelectorAll('#indexGrid .index-card').forEach(card => {
-    if (card.querySelector('input')) { saveIndexCardEdit(card); hasIndexEdit = true; }
-  });
-  if (hasIndexEdit && store[t]) {
-    store[t].indexData = getIndexSnapshot();
-  }
   saveStore(store);
   renderTiming();
-  // 同步更新三个表格表头
   renderFundTable();
   renderFundTable2();
   renderFundTable3();
@@ -6157,15 +6127,15 @@ function isHistoricalDate(dateStr) {
   return dateStr < today && !isWeekend(dateStr);
 }
 
-/* 指数编辑模式：直接进入编辑状态，三个指数卡片同时显示输入框 */
+/* 指数编辑模式：历史日期时出现编辑图标，点击后三个指数卡片可点击进入编辑 */
 function enableIndexEditMode() {
   document.querySelectorAll('#indexGrid .index-card').forEach(card => {
     card.classList.add('editable');
-    editIndexCard(card);
+    card.onclick = function() { editIndexCard(this); };
   });
 }
 
-/* 退出指数编辑模式：保存所有正在编辑的卡片并恢复显示 */
+/* 退出指数编辑模式：保存正在编辑的卡片，移除可点击状态 */
 function disableIndexEditMode() {
   let hasEdited = false;
   document.querySelectorAll('#indexGrid .index-card').forEach(card => {
@@ -6173,7 +6143,6 @@ function disableIndexEditMode() {
     card.classList.remove('editable');
     card.onclick = null;
   });
-  // 只有实际编辑过指数才将 DOM 数据同步到 store 快照
   if (hasEdited) {
     const t = latestTradingDay();
     if (store[t]) {
@@ -7476,12 +7445,17 @@ function editTitleDate() {
       }
     }
 
-    // 历史日期：隐藏刷新按钮；最新日期：显示刷新按钮
+    // 历史日期：隐藏刷新按钮，显示指数编辑图标
+    // 最新日期：显示刷新按钮，隐藏编辑图标，清理编辑态
     const refreshBtn = document.getElementById('refreshIndexBtn');
+    const editBtn = document.getElementById('indexEditBtn');
     if (isHistoricalDate(newDate)) {
       if (refreshBtn) refreshBtn.style.display = 'none';
+      if (editBtn) editBtn.style.display = '';
     } else {
       if (refreshBtn) refreshBtn.style.display = '';
+      if (editBtn) editBtn.style.display = 'none';
+      disableIndexEditMode();
     }
 
     // 重新渲染所有模块
