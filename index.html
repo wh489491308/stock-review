@@ -2166,40 +2166,27 @@
   }
   .history-empty .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
 
-  /* ===== 右上角操作按钮组 ===== */
-  #topActionBar {
-    position: fixed;
-    top: 14px;
-    right: 14px;
-    z-index: 50;
+  /* ===== 标题行操作按钮（提示词/录入） ===== */
+  h1 .title-actions {
+    float: right;
     display: flex;
     gap: 8px;
     align-items: center;
   }
-  #topActionBar button {
-    border: 1px solid var(--border);
-    background: var(--panel-2);
-    color: var(--text);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,.4);
-    transition: border-color .15s, color .15s;
-  }
-  #topActionBar button:hover { border-color: var(--blue); color: var(--blue); }
 
-  /* ===== 保存按钮（择时模块内） ===== */
+  /* ===== 保存按钮（择时模块内，圆形） ===== */
   #saveBtn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     border: 1px solid var(--border);
     background: var(--panel-2);
     color: var(--text);
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 13px;
-    font-family: inherit;
+    font-size: 15px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: border-color .15s, color .15s;
   }
   #saveBtn:hover { border-color: var(--green); color: var(--green); }
@@ -2586,15 +2573,13 @@
 </head>
 <body>
 
-<!-- 导��长图 -->
-<!-- 右上角操作按钮组 -->
-<div id="topActionBar">
-  <button id="promptBtn" title="复制AI识图提示词" onclick="copyAllBatchPrompt()">🔖 提示词</button>
-  <button id="batchBtn" title="批量录入" onclick="openAllBatchModal()">录入</button>
-</div>
-
 <div id="mainView">
-<h1>📝 <span class="date" id="todayDate" title="点击修改日期" onclick="editTitleDate()" style="cursor:pointer;font-size:inherit;font-weight:inherit"></span> 股票复盘</h1>
+<h1>📝 <span class="date" id="todayDate" title="点击修改日期" onclick="editTitleDate()" style="cursor:pointer;font-size:inherit;font-weight:inherit"></span> 股票复盘
+  <span class="title-actions">
+    <button class="btn btn-ghost btn-sm" id="promptBtn" title="复制AI识图提示词" onclick="copyAllBatchPrompt()">🔖 提示词</button>
+    <button class="btn btn-ghost btn-sm" id="batchBtn" title="批量录入" onclick="openAllBatchModal()">📋录入</button>
+  </span>
+</h1>
 
 <!-- 择时模块 -->
 <section class="module">
@@ -4419,10 +4404,10 @@ function toggleEditMode() {
   const btns = [document.getElementById('editModeBtn'), document.getElementById('editModeBtn2'), document.getElementById('editModeBtn3')];
   const tables = [document.getElementById('fundTable'), document.getElementById('fundTable2'), document.getElementById('fundTable3')];
   if (editMode) {
-    btns.forEach(b => { if (b) { b.textContent = '退出'; b.classList.remove('btn-ghost'); } });
+    btns.forEach(b => { if (b) { b.textContent = '✏️ 退出'; b.classList.remove('btn-ghost'); } });
     tables.forEach(t => { if (t) t.classList.add('edit-mode'); });
   } else {
-    btns.forEach(b => { if (b) { b.textContent = '编辑'; b.classList.add('btn-ghost'); } });
+    btns.forEach(b => { if (b) { b.textContent = '✏️ 编辑'; b.classList.add('btn-ghost'); } });
     tables.forEach(t => { if (t) t.classList.remove('edit-mode'); });
   }
 }
@@ -5809,17 +5794,14 @@ function switchTab(tab) {
   const stockView = document.getElementById('stockView');
   const saveBtn = document.getElementById('saveBtn');
   const planExportBtn = document.getElementById('planExportBtn');
-  const topActionBar = document.getElementById('topActionBar');
   const bottomBtns = document.querySelectorAll('#bottomBar .menu-btn');
 
   bottomBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   saveBtn.style.display = 'none';
-  if (topActionBar) topActionBar.style.display = 'none';
   if (planExportBtn) planExportBtn.style.display = 'none';
 
   if (tab === 'review') {
     saveBtn.style.display = '';
-    if (topActionBar) topActionBar.style.display = '';
   } else if (tab === 'plan') {
     if (planExportBtn) planExportBtn.style.display = 'flex';
   }
