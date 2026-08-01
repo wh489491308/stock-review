@@ -1983,9 +1983,6 @@
     font-size: 14px;
     font-family: inherit;
     outline: none;
-    height: 38px;
-    box-sizing: border-box;
-    min-width: 160px;
   }
   #historyView .history-filter input:focus, #stockView .history-filter input:focus { border-color: var(--blue); }
 
@@ -2717,7 +2714,7 @@
     </div>
     <div class="history-filter">
       <span style="color:var(--text-dim);font-size:13px">筛选日期：</span>
-      <input type="date" id="historyDateFilter" onchange="renderHistoryList()">
+      <input type="text" id="historyDateFilter" oninput="renderHistoryList()" placeholder="如 2026-07-31">
       <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">清除</button>
     </div>
   </div>
