@@ -2588,7 +2588,7 @@
   <div class="index-section">
     <div class="index-header">
       <label>板块指数：</label>
-      <button class="btn btn-sm btn-ghost" id="refreshIndexBtn" onclick="fetchIndexData()">🔄 刷新</button>
+      <span class="mv-edit" id="refreshIndexBtn" onclick="fetchIndexData()" title="刷新指数">↻</span>
     </div>
     <div class="index-grid" id="indexGrid">
       <div class="index-card" data-code="sh000001">
@@ -3905,7 +3905,7 @@ function fetchIndexData() {
 /* 腾讯接口：用 <script charset="gbk"> JSONP 方式加载 */
 function fetchIndexViaTencent() {
   const btn = document.getElementById('refreshIndexBtn');
-  if (btn) { btn.textContent = '⏳ 加载中...'; btn.disabled = true; }
+  if (btn) { btn.textContent = '⏳'; btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5'; }
   // 清除旧数据
   window.__indexCallback = function() {
     INDEX_CODES.forEach(code => {
@@ -3925,7 +3925,7 @@ function fetchIndexViaTencent() {
       updateIndexCard(code, name, price, changeAmt, changePct, high, low);
     });
     const btn = document.getElementById('refreshIndexBtn');
-    if (btn) { btn.textContent = '🔄 刷新'; btn.disabled = false; }
+    if (btn) { btn.textContent = '↻'; btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; }
     toast('指数已刷新 ✓');
   };
   const url = 'https://qt.gtimg.cn/q=' + INDEX_CODES.join(',');
@@ -3937,7 +3937,7 @@ function fetchIndexViaTencent() {
   script.src = url + '&t=' + Date.now();  // 加时间戳防缓存
   script.onerror = function() {
     const btn = document.getElementById('refreshIndexBtn');
-    if (btn) { btn.textContent = '🔄 刷新'; btn.disabled = false; }
+    if (btn) { btn.textContent = '↻'; btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; }
     toast('指数刷新失败，请重试');
   };
   script.onload = function() {
