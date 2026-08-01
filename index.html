@@ -5953,6 +5953,13 @@ function renderPlanView() {
     plans.forEach(p => {
       // 尾盘·等一天的计划不提取
       if (p.tradeMode === '尾盘' && p.tailAction === '等一天') return;
+      // 计划不完整不提取：必须有类型，且 sell2 需要有阶段，其他需要有目标价
+      if (!p.type) return;
+      if (p.planType === 'sell2') {
+        if (!p.stage) return;
+      } else {
+        if (!p.targetPrice) return;
+      }
       const needsFilter = p.planType === 'sell1' || p.planType === 'stop1' || p.planType === 'stop2';
       const rateInfo = needsFilter ? calcTargetRate(dayPrice, p.targetPrice) : null;
       if (needsFilter && rateInfo && Math.abs(rateInfo.val) > 10) return;
