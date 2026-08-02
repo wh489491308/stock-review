@@ -1317,6 +1317,17 @@
     gap: 10px;
   }
   .fund-sub-title { font-size: 14px; color: var(--text-dim); font-weight: 600; line-height: 1; margin-top: -15px; }
+  .fund-edit-icon {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1;
+    margin-top: -15px;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  .fund-edit-icon:hover { color: var(--blue); }
+  .fund-edit-icon.editing { color: var(--blue); }
   .fund-toolbar { }
   table.fund-table {
     border-collapse: collapse;
@@ -2658,9 +2669,7 @@
   <div class="fund-sub" id="fundSub1">
     <div class="fund-sub-head">
       <span class="fund-sub-title">主力资金</span>
-      <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn" onclick="toggleEditMode(1)">✏️ 编辑</button>
-      </div>
+      <span class="fund-edit-icon" id="editModeBtn" onclick="event.stopPropagation();toggleEditMode(1)" title="编辑">✎</span>
     </div>
     <div class="fund-table-wrap">
       <table class="fund-table" id="fundTable">
@@ -2674,9 +2683,7 @@
   <div class="fund-sub" id="fundSub2">
     <div class="fund-sub-head">
       <span class="fund-sub-title">行业板块</span>
-      <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn2" onclick="toggleEditMode(2)">✏️ 编辑</button>
-      </div>
+      <span class="fund-edit-icon" id="editModeBtn2" onclick="event.stopPropagation();toggleEditMode(2)" title="编辑">✎</span>
     </div>
     <div class="fund-table-wrap">
       <table class="fund-table" id="fundTable2">
@@ -2690,9 +2697,7 @@
   <div class="fund-sub" id="fundSub3">
     <div class="fund-sub-head">
       <span class="fund-sub-title">概念板块</span>
-      <div class="fund-toolbar">
-        <button class="btn btn-sm btn-ghost" id="editModeBtn3" onclick="toggleEditMode(3)">✏️ 编辑</button>
-      </div>
+      <span class="fund-edit-icon" id="editModeBtn3" onclick="event.stopPropagation();toggleEditMode(3)" title="编辑">✎</span>
     </div>
     <div class="fund-table-wrap">
       <table class="fund-table" id="fundTable3">
@@ -4424,13 +4429,22 @@ function toggleEditMode(subId) {
   if (!btn || !table) return;
   const isEditing = table.classList.contains('edit-mode');
   if (isEditing) {
-    btn.textContent = '✏️ 编辑';
-    btn.classList.add('btn-ghost');
+    btn.classList.remove('editing');
     table.classList.remove('edit-mode');
   } else {
-    btn.textContent = '✏️ 退出';
-    btn.classList.remove('btn-ghost');
+    btn.classList.add('editing');
     table.classList.add('edit-mode');
+    // 点击表格外自动退出编辑
+    setTimeout(() => {
+      const handler = (e) => {
+        if (!table.contains(e.target) && e.target !== btn) {
+          btn.classList.remove('editing');
+          table.classList.remove('edit-mode');
+          document.removeEventListener('click', handler);
+        }
+      };
+      document.addEventListener('click', handler);
+    }, 10);
   }
 }
 
@@ -5599,7 +5613,7 @@ window.addEventListener('resize', () => {
 
 // 点击空白取消选中
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.cell-inner') && !e.target.closest('.fund-toolbar')) {
+  if (!e.target.closest('.cell-inner') && !e.target.closest('.fund-edit-icon')) {
     clearSelection();
   }
 });
@@ -5625,7 +5639,7 @@ function enterFullscreen() {
   switchFsTab('fund');
   // 隐藏标题与工具栏（内联样式双保险，确保优先级最高）
   m.querySelector('.module-title').style.display = 'none';
-  m.querySelectorAll('.fund-toolbar').forEach(t => t.style.display = 'none');
+  m.querySelectorAll('.fund-edit-icon').forEach(t => t.style.display = 'none');
   document.body.style.overflow = 'hidden';
   // 滚动到最左（今天列）
   m.querySelectorAll('.fund-table-wrap').forEach(w => w.scrollLeft = 0);
@@ -5721,7 +5735,7 @@ function exitFullscreen() {
   m.classList.remove('fs-active');
   // 恢复标题与工具栏显示
   m.querySelector('.module-title').style.display = '';
-  m.querySelectorAll('.fund-toolbar').forEach(t => t.style.display = '');
+  m.querySelectorAll('.fund-edit-icon').forEach(t => t.style.display = '');
   document.body.style.overflow = '';
   window.removeEventListener('resize', fitFsTable);
   // 清除全屏态设置的内联列宽，恢复 CSS 默认的 59px
