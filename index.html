@@ -1533,6 +1533,11 @@
     background: var(--blue); color: #fff; border: none;
     padding: 8px 28px; border-radius: 6px; font-size: 14px; cursor: pointer;
   }
+  .center-confirm-btns { display: flex; gap: 12px; justify-content: center; }
+  .center-confirm-btns .btn-cancel {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  }
+  .center-confirm-btns .btn-confirm { background: var(--blue); color: #fff; }
   .legend {
     display: flex;
     gap: 16px;
@@ -3239,12 +3244,13 @@ function addStockCard(name, change) {
 }
 
 function removeStockCard(index) {
-  if (!confirm('确认删除该个股？')) return;
-  const t = latestTradingDay();
-  if (!store[t] || !store[t].stocks) return;
-  store[t].stocks.splice(index, 1);
-  saveStore(store);
-  renderStockCards();
+  centerConfirm('确认删除该个股？', () => {
+    const t = latestTradingDay();
+    if (!store[t] || !store[t].stocks) return;
+    store[t].stocks.splice(index, 1);
+    saveStore(store);
+    renderStockCards();
+  });
 }
 
 /* 拖拽排序：长按把手后手动跟踪移动实现排序 */
@@ -3562,14 +3568,15 @@ function addPlan(index, planType) {
 }
 
 function removePlan(stockIdx, planIdx) {
-  if (!confirm('确认删除该计划？')) return;
-  const t = latestTradingDay();
-  if (!store[t] || !store[t].stocks) return;
-  const s = store[t].stocks[stockIdx];
-  if (!s.plans) return;
-  s.plans.splice(planIdx, 1);
-  saveStore(store);
-  renderStockCards();
+  centerConfirm('确认删除该计划？', () => {
+    const t = latestTradingDay();
+    if (!store[t] || !store[t].stocks) return;
+    const s = store[t].stocks[stockIdx];
+    if (!s.plans) return;
+    s.plans.splice(planIdx, 1);
+    saveStore(store);
+    renderStockCards();
+  });
 }
 
 function movePlan(stockIdx, planIdx, dir) {
@@ -4935,18 +4942,16 @@ function saveBatch() {
     toast('请选择日期');
     return;
   }
-  // 周末提示（不阻止，但提醒）
-  if (isWeekend(dateStr)) {
-    if (!confirm(`${dateStr} 是周末，确定要录入吗？`)) return;
-  }
   const text = document.getElementById('batchText').value;
   const kind = batchKind || 'fund';
-  const parsed = kind !== 'fund' ? parseBatchPct(text) : parseBatchText(text);
-  if (parsed.in.length === 0 && parsed.out.length === 0) {
-    toast('未解析到有效数据');
-    return;
-  }
-  const fund = getDayFund(dateStr, kind);
+
+  function doSave() {
+    const parsed = kind !== 'fund' ? parseBatchPct(text) : parseBatchText(text);
+    if (parsed.in.length === 0 && parsed.out.length === 0) {
+      toast('未解析到有效数据');
+      return;
+    }
+    const fund = getDayFund(dateStr, kind);
   const renderFn = kind === 'fund3' ? renderFundTable3 : (kind === 'fund2' ? renderFundTable2 : renderFundTable);
   if (kind !== 'fund') {
     // parseBatchPct 已按大小排序并拆分前6/后6，直接取用
@@ -4968,6 +4973,16 @@ function saveBatch() {
       (parsed.in.length > 6 || parsed.out.length > 6 ? '（超出6条已截断）' : '');
     toast(msg);
   }
+  }
+
+  // 周末提示（不阻止，但提醒）
+  if (isWeekend(dateStr)) {
+    centerConfirm(`${dateStr} 是周末，确定要录入吗？`, () => {
+      doSave();
+    });
+    return;
+  }
+  doSave();
 }
 
 /* =========================
@@ -5541,6 +5556,25 @@ function centerAlert(msg, onOk) {
     if (typeof onOk === 'function') onOk();
   });
   btn.focus();
+}
+
+/* 自定义确认弹窗：始终显示中文"确认"/"取消" */
+function centerConfirm(msg, onConfirm, onCancel) {
+  const overlay = document.createElement('div');
+  overlay.className = 'center-alert-overlay';
+  overlay.innerHTML = `<div class="center-alert-box"><div class="msg">${msg}</div><div class="center-confirm-btns"><button class="btn-cancel">取 消</button><button class="btn-confirm">确 认</button></div></div>`;
+  document.body.appendChild(overlay);
+  const btnConfirm = overlay.querySelector('.btn-confirm');
+  const btnCancel = overlay.querySelector('.btn-cancel');
+  btnConfirm.addEventListener('click', () => {
+    overlay.remove();
+    if (typeof onConfirm === 'function') onConfirm();
+  });
+  btnCancel.addEventListener('click', () => {
+    overlay.remove();
+    if (typeof onCancel === 'function') onCancel();
+  });
+  btnConfirm.focus();
 }
 
 /* 初始化 */
@@ -7363,25 +7397,27 @@ function renderHistoryFundTable(title, fundData, kind) {
 
 /* 删除历史记录 */
 function deleteHistory(idx) {
-  if (!confirm('确定删除这条历史记录吗？')) return;
-  let history = loadHistory();
-  history.splice(idx, 1);
-  saveHistory(history);
-  renderHistoryList();
-  toast('已删除');
-}
-
-/* 从卡片按钮删除（通过 date 查找） */
-function deleteHistoryFromCard(dateStr) {
-  if (!confirm('确定删除 ' + fmtMonthDay(dateStr) + ' 的复盘记录吗？')) return;
-  let history = loadHistory();
-  const idx = history.findIndex(h => h.date === dateStr);
-  if (idx >= 0) {
+  centerConfirm('确定删除这条历史记录吗？', () => {
+    let history = loadHistory();
     history.splice(idx, 1);
     saveHistory(history);
     renderHistoryList();
     toast('已删除');
-  }
+  });
+}
+
+/* 从卡片按钮删除（通过 date 查找） */
+function deleteHistoryFromCard(dateStr) {
+  centerConfirm('确定删除 ' + fmtMonthDay(dateStr) + ' 的复盘记录吗？', () => {
+    let history = loadHistory();
+    const idx = history.findIndex(h => h.date === dateStr);
+    if (idx >= 0) {
+      history.splice(idx, 1);
+      saveHistory(history);
+      renderHistoryList();
+      toast('已删除');
+    }
+  });
 }
 
 // 点击遮罩关闭历史详情
