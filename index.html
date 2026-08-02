@@ -2359,6 +2359,8 @@
     border-radius: 8px;
     padding: 16px;
   }
+  .plan-day-card.plan-card-bull { border-color: var(--red); }
+  .plan-day-card.plan-card-bear { border-color: var(--green); }
   .plan-day-card .pdc-head {
     display: flex;
     align-items: center;
@@ -6031,8 +6033,10 @@ function renderPlanView() {
     </div>`;
   }).filter(Boolean).join('');
 
+  const cardZoneCls = mvZone === '多头区间' ? 'plan-card-bull' : mvZone === '空头区间' ? 'plan-card-bear' : '';
+
   if (!rows) {
-    list.innerHTML = `<div class="plan-day-card">
+    list.innerHTML = `<div class="plan-day-card ${cardZoneCls}">
       ${zoneTextHtml}
       <div class="plan-empty">
         <span class="empty-icon">📋</span>
@@ -6042,7 +6046,7 @@ function renderPlanView() {
     return;
   }
 
-  list.innerHTML = `<div class="plan-day-card">
+  list.innerHTML = `<div class="plan-day-card ${cardZoneCls}">
     ${zoneTextHtml}
     ${rows}
   </div>`;
