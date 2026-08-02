@@ -5774,36 +5774,34 @@ function exportPlanImage() {
   }
 
   // 等待文字稳定到 showing 状态后执行截图
-  waitForStableThenCapture();
-}
-
-function waitForStableThenCapture() {
-  const el = document.getElementById('planZoneText');
-  // 如果没有轮播元素，直接截图
-  if (!el || _planZoneState === 'showing') {
+  function waitForStable() {
+    const el = document.getElementById('planZoneText');
+    // 如果没有轮播元素，直接截图
+    if (!el || _planZoneState === 'showing') {
+      doCapture();
+      return;
+    }
+    if (_planZoneState === 'fading') {
+      // 正在淡出：恢复上一句话，取消 transition，直接显示
+      el.style.transition = 'none';
+      el.style.opacity = '1';
+      el.textContent = _planZonePrevText;
+      _planZoneState = 'showing';
+      requestAnimationFrame(() => doCapture());
+      return;
+    }
+    if (_planZoneState === 'fadingIn') {
+      // 正在淡入：立即跳到完全显示
+      el.style.transition = 'none';
+      el.style.opacity = '1';
+      _planZoneState = 'showing';
+      requestAnimationFrame(() => doCapture());
+      return;
+    }
     doCapture();
-    return;
   }
-  if (_planZoneState === 'fading') {
-    // 正在淡出：恢复上一句话，取消 transition，直接显示
-    el.style.transition = 'none';
-    el.style.opacity = '1';
-    el.textContent = _planZonePrevText;
-    _planZoneState = 'showing';
-    // 等一帧确保渲染完成
-    requestAnimationFrame(() => doCapture());
-    return;
-  }
-  if (_planZoneState === 'fadingIn') {
-    // 正在淡入：立即跳到完全显示
-    el.style.transition = 'none';
-    el.style.opacity = '1';
-    _planZoneState = 'showing';
-    requestAnimationFrame(() => doCapture());
-    return;
-  }
-  // 兜底
-  doCapture();
+
+  waitForStable();
 }
 
 /* =========================
