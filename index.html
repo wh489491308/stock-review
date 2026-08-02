@@ -63,22 +63,26 @@
   }
   /* 模块序号旗帜 */
   .module-num-flag {
-    width: 28px;
+    width: 36px;
     background: var(--panel-2);
     clip-path: polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%);
-    padding: 2px 2px 7px;
+    padding: 4px 4px 10px;
     text-align: center;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
   }
   .module-num-flag .mnf-label {
-    font-size: 6px;
+    font-size: 7px;
     color: var(--text-dim);
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
     font-weight: 500;
     line-height: 1;
   }
   .module-num-flag .mnf-num {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--text);
     line-height: 1;
