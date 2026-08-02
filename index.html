@@ -70,6 +70,13 @@
     text-align: center;
     flex-shrink: 0;
   }
+  .module-num-flag .mnf-label {
+    font-size: 6px;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+    font-weight: 500;
+    line-height: 1;
+  }
   .module-num-flag .mnf-num {
     font-size: 15px;
     font-weight: 700;
@@ -2632,7 +2639,7 @@
 
 <!-- 择时模块 -->
 <section class="module">
-  <div class="module-title"><span class="module-num-flag"><span class="mnf-num">01</span></span>一、择时
+  <div class="module-title"><span class="module-num-flag"><span class="mnf-label">POINT</span><span class="mnf-num">01</span></span>一、择时
     <span class="title-actions">
       <span class="breadth-edit-icon" id="promptBtn" title="复制AI识图提示词" onclick="copyAllBatchPrompt()" style="position:static;font-size:14px;padding:1px 3px;">⧉</span>
       <button class="btn btn-ghost btn-sm" id="batchBtn" title="批量录入" onclick="openAllBatchModal()">📋录入</button>
@@ -2682,7 +2689,7 @@
     <button class="fs-tab" data-fs-tab="fund2" onclick="switchFsTab('fund2')">2</button>
     <button class="fs-tab" data-fs-tab="fund3" onclick="switchFsTab('fund3')">3</button>
   </div>
-  <div class="module-title"><span class="module-num-flag"><span class="mnf-num">02</span></span>
+  <div class="module-title"><span class="module-num-flag"><span class="mnf-label">POINT</span><span class="mnf-num">02</span></span>
     二、资金
     <button class="fullscreen-btn" id="enterFsBtn" onclick="enterFullscreen()">⛶</button>
   </div>
@@ -2735,13 +2742,13 @@
 
 <!-- 持仓模块 -->
 <section class="module" id="positionModule">
-  <div class="module-title"><span class="module-num-flag"><span class="mnf-num">03</span></span>三、持仓 <button class="fullscreen-btn" id="addStockBtn" onclick="addStockCard()" style="font-size:18px;padding:0;line-height:1;">+</button></div>
+  <div class="module-title"><span class="module-num-flag"><span class="mnf-label">POINT</span><span class="mnf-num">03</span></span>三、持仓 <button class="fullscreen-btn" id="addStockBtn" onclick="addStockCard()" style="font-size:18px;padding:0;line-height:1;">+</button></div>
   <div id="stockCardsContainer"></div>
 </section>
 
 <!-- 心态模块 -->
 <section class="module" id="mindsetModule">
-  <div class="module-title"><span class="module-num-flag"><span class="mnf-num">04</span></span>四、心态</div>
+  <div class="module-title"><span class="module-num-flag"><span class="mnf-label">POINT</span><span class="mnf-num">04</span></span>四、心态</div>
   <div id="mindsetCardsContainer"></div>
 </section>
 </div><!-- /mainView -->
