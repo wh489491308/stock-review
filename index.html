@@ -3348,7 +3348,7 @@ function renderStockCards() {
       : `<span class="stock-change" style="color:var(--text-dim)">—</span>`;
     // 持仓分类下拉框：核心资产/交易性机会/防守配置，不选时为 "-"
     const tagVal = s.tag || '';
-    const tagHtml = `<select class="stock-tag-select" onchange="saveStockField(${i},'tag',this.value)">` +
+    const tagHtml = `<select class="stock-tag-select" style="${!tagVal ? 'color:var(--text-dim)' : ''}" onchange="saveStockField(${i},'tag',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
       `<option value=""${!tagVal ? ' selected' : ''}>-</option>` +
       `<option value="核心资产"${tagVal==='核心资产' ? ' selected' : ''}>核心资产</option>` +
       `<option value="交易性机会"${tagVal==='交易性机会' ? ' selected' : ''}>交易性机会</option>` +
