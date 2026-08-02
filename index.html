@@ -5970,7 +5970,8 @@ function renderPlanView() {
     zoneTexts = ['只卖不买，管住手，不要开新仓！', '不要手痒，不要乱摸！', '蹬起来就卖，漏下去就肘！', '这次还不信吗？前面亏得还不疼吗？', '不要对期待抱有不切实际的幻想！'];
   }
   if (zoneTexts.length > 0) {
-    zoneTextHtml = `<div class="plan-zone-text ${mvZone === '多头区间' ? 'plan-zone-bull' : 'plan-zone-bear'}" id="planZoneText" data-texts="${zoneTexts.join('|||')}" data-idx="0">${zoneTexts[0]}</div>`;
+    const rndIdx = Math.floor(Math.random() * zoneTexts.length);
+    zoneTextHtml = `<div class="plan-zone-text ${mvZone === '多头区间' ? 'plan-zone-bull' : 'plan-zone-bear'}" id="planZoneText" data-texts="${zoneTexts.join('|||')}" data-idx="${rndIdx}">${zoneTexts[rndIdx]}</div>`;
   }
   document.getElementById('planZoneTag') && (document.getElementById('planZoneTag').outerHTML =
     `<span id="planZoneTag" style="display:${zoneTagHtml ? 'inline-block' : 'none'}">${zoneTagHtml}</span>`);
