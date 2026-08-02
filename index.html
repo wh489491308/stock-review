@@ -3297,29 +3297,29 @@ function dragMove(e) {
   const dy = clientY - dragStartY;
   const cards = document.querySelectorAll('#stockCardsContainer .stock-card');
   if (cards.length < 2) return;
-  // 计算每个卡片的高度，判断移动到哪个位置
-  const cardHeight = cards[0].offsetHeight + 10; // 10 = margin-bottom
+  const cardHeight = cards[0].offsetHeight + 10;
   const offset = Math.round(dy / cardHeight);
   const newIndex = Math.max(0, Math.min(cards.length - 1, dragSrcIndex + offset));
   if (newIndex !== dragSrcIndex) {
-    // 交换位置
+    // 直接操作 DOM 交换位置，不重新渲染
+    const container = document.getElementById('stockCardsContainer');
+    const srcCard = cards[dragSrcIndex];
+    const targetCard = cards[newIndex];
+    if (dragSrcIndex < newIndex) {
+      container.insertBefore(srcCard, targetCard.nextSibling);
+    } else {
+      container.insertBefore(srcCard, targetCard);
+    }
+    // 更新数据
     const t = latestTradingDay();
-    if (!store[t] || !store[t].stocks) return;
-    const stocks = store[t].stocks;
-    const [moved] = stocks.splice(dragSrcIndex, 1);
-    stocks.splice(newIndex, 0, moved);
+    if (store[t] && store[t].stocks) {
+      const stocks = store[t].stocks;
+      const [moved] = stocks.splice(dragSrcIndex, 1);
+      stocks.splice(newIndex, 0, moved);
+      saveStore(store);
+    }
     dragSrcIndex = newIndex;
     dragStartY = clientY;
-    saveStore(store);
-    renderStockCards();
-    // 渲染后重新高亮当前位置
-    setTimeout(() => {
-      const cards2 = document.querySelectorAll('#stockCardsContainer .stock-card');
-      if (cards2[dragSrcIndex]) {
-        cards2[dragSrcIndex].style.opacity = '0.4';
-        cards2[dragSrcIndex].style.transition = 'none';
-      }
-    }, 50);
   }
 }
 
