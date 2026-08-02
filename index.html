@@ -618,6 +618,10 @@
     background-position: right 4px center;
     background-size: 8px 6px;
   }
+  .sell-point-row select.sp-select.sp-no-arrow {
+    background-image: none;
+    padding-right: 4px;
+  }
   .sell-point-row select.sp-select:focus { border-color: var(--blue); }
   .sell-point-row select.sp-type2-select { width: 86px; }
   .sell-point-row select.sp-tail-action { width: 64px; }
@@ -3351,6 +3355,18 @@ function reattachDragEvents() {
   }
 }
 
+/* 更新计划下拉框样式：有值时白色无箭头，空值时灰色有箭头 */
+function updatePlanSelectStyle(sel) {
+  if (!sel) return;
+  const hasVal = !!sel.value;
+  sel.style.color = hasVal ? 'var(--text)' : 'var(--text-dim)';
+  if (hasVal) {
+    sel.classList.add('sp-no-arrow');
+  } else {
+    sel.classList.remove('sp-no-arrow');
+  }
+}
+
 function renderStockCards() {
   const container = document.getElementById('stockCardsContainer');
   if (!container) return;
@@ -3364,7 +3380,7 @@ function renderStockCards() {
       : `<span class="stock-change" style="color:var(--text-dim)">—</span>`;
     // 持仓分类下拉框：核心资产/交易性机会/防守配置，不选时为 "-"
     const tagVal = s.tag || '';
-    const tagHtml = `<select class="stock-tag-select" style="${!tagVal ? 'color:var(--text-dim)' : ''}" onchange="saveStockField(${i},'tag',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
+    const tagHtml = `<select class="stock-tag-select" style="${!tagVal ? 'color:var(--text-dim)' : ''}" onchange="saveStockField(${i},'tag',this.value);updatePlanSelectStyle(this)">` +
       `<option value=""${!tagVal ? ' selected' : ''}>-</option>` +
       `<option value="核心资产"${tagVal==='核心资产' ? ' selected' : ''}>核心资产</option>` +
       `<option value="交易性机会"${tagVal==='交易性机会' ? ' selected' : ''}>交易性机会</option>` +
@@ -3411,13 +3427,13 @@ function renderStockCards() {
         `<div class="plan-item sell-point-row ${pCls}">` +
           `<div class="sp-line">` +
             `<span class="sp-label ${planLabelClass(p.planType)}">${planLabel(p.planType)} </span>` +
-            `<select class="sp-select" style="${!p.tradeMode ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'tradeMode',this.value);${hasTail?`togglePlanTail(${i},${pi});`:''}this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
+            `<select class="sp-select" style="${!p.tradeMode ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'tradeMode',this.value);${hasTail?`togglePlanTail(${i},${pi});`:''}updatePlanSelectStyle(this)">` +
               `<option value=""${!p.tradeMode ? ' selected' : ''}>方式</option>` +
               `<option value="条件单"${p.tradeMode==='条件单' ? ' selected' : ''}>条件单</option>` +
               `<option value="尾盘"${p.tradeMode==='尾盘' ? ' selected' : ''}>尾盘</option>` +
             `</select>` +
             (hasTail
-              ? `<select class="sp-select sp-tail-action" id="${tailId}" style="${p.tradeMode==='尾盘' ? '' : 'display:none'};${!p.tailAction ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'tailAction',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
+              ? `<select class="sp-select sp-tail-action" id="${tailId}" style="${p.tradeMode==='尾盘' ? '' : 'display:none'};${!p.tailAction ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'tailAction',this.value);updatePlanSelectStyle(this)">` +
                   `<option value=""${!p.tailAction ? ' selected' : ''}>操作</option>` +
                   `<option value="等一天"${p.tailAction==='等一天' ? ' selected' : ''}>等一天</option>` +
                   `<option value="直接肘"${p.tailAction==='直接肘' ? ' selected' : ''}>直接肘</option>` +
@@ -3431,13 +3447,13 @@ function renderStockCards() {
           `</div>` +
           `<div class="sp-line">` +
             (hasStage
-              ? `<select class="sp-select sp-type2-select" style="${!p.type ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'type',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
+              ? `<select class="sp-select sp-type2-select" style="${!p.type ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'type',this.value);updatePlanSelectStyle(this)">` +
                   `<option value=""${!p.type ? ' selected' : ''}>卖点</option>` +
                   planTypeOpts(p.planType).map(o => `<option value="${o}"${p.type===o ? ' selected' : ''}>${o}</option>`).join('') +
                 `</select>` +
                 `<span class="sp-stage-wrap">` +
                   `<span class="sp-stage-label">目前：</span>` +
-                  `<select class="sp-select sp-stage-select" style="${!p.stage ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'stage',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
+                  `<select class="sp-select sp-stage-select" style="${!p.stage ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'stage',this.value);updatePlanSelectStyle(this)">` +
                     `<option value=""${!p.stage ? ' selected' : ''}>—</option>` +
                     `<option value="红1"${p.stage==='红1'?' selected':''}>红1</option>` +
                     `<option value="红2"${p.stage==='红2'?' selected':''}>红2</option>` +
@@ -3446,7 +3462,7 @@ function renderStockCards() {
                     `<option value="绿1"${p.stage==='绿1'?' selected':''}>绿1</option>` +
                   `</select>` +
                 `</span>`
-              : `<select class="sp-select" style="${!p.type ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'type',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
+              : `<select class="sp-select" style="${!p.type ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'type',this.value);updatePlanSelectStyle(this)">` +
                   `<option value=""${!p.type ? ' selected' : ''}>卖点</option>` +
                   planTypeOpts(p.planType).map(o => `<option value="${o}"${p.type===o ? ' selected' : ''}>${o}</option>`).join('') +
                 `</select>`) +
@@ -3497,6 +3513,9 @@ function renderStockCards() {
       `</div>`;
   });
   container.innerHTML = html;
+  // 初始化下拉框箭头状态：有值则隐藏箭头
+  container.querySelectorAll('select.sp-select').forEach(s => updatePlanSelectStyle(s));
+  container.querySelectorAll('select.stock-tag-select').forEach(s => updatePlanSelectStyle(s));
   // 绑定拖拽事件
   setTimeout(reattachDragEvents, 50);
 }
