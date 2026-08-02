@@ -1809,7 +1809,7 @@
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 12px 14px;
+    padding: 0 14px;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
   }
@@ -1819,18 +1819,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    min-height: 42px;
+    padding: 12px 0;
   }
   .stock-summary-card .ssc-name { font-size: 16px; font-weight: 600; }
   .stock-summary-card .ssc-count { font-size: 12px; color: var(--text-dim); }
   .stock-summary-card .ssc-records {
-    margin-top: 10px;
+    margin-top: 0;
     max-height: 0;
     overflow: hidden;
     opacity: 0;
     transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
   }
   .stock-summary-card.expanded .ssc-records {
+    margin-top: 10px;
     max-height: 3000px;
     opacity: 1;
   }
@@ -1909,7 +1910,6 @@
     gap: 10px;
     flex: 1;
     min-width: 0;
-    min-height: 36px;
   }
   /* 日期两行作为一个整体 */
   .ssc-dates {
