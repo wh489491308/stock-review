@@ -1571,7 +1571,7 @@
     margin-left: auto;
     background: var(--panel-2);
     border: 1px solid var(--border);
-    color: var(--text);
+    color: var(--text-dim);
     width: 30px;
     height: 30px;
     border-radius: 6px;
@@ -1580,10 +1580,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
     line-height: 1;
   }
-  .fullscreen-btn:hover { background: var(--border); }
+  .fullscreen-btn:hover { background: var(--border); color: var(--text); }
 
   /* 横屏全屏态：固定铺满整个视口，旋转 90° */
   #fundModule {
@@ -2720,7 +2720,7 @@
 
 <!-- 持仓模块 -->
 <section class="module" id="positionModule">
-  <div class="module-title">三、持仓 <button class="fullscreen-btn" id="addStockBtn" onclick="addStockCard()" style="font-size:20px;padding:0;margin-right:-5px;">+</button></div>
+  <div class="module-title">三、持仓 <button class="fullscreen-btn" id="addStockBtn" onclick="addStockCard()" style="font-size:18px;padding:0;line-height:1;">+</button></div>
   <div id="stockCardsContainer"></div>
 </section>
 
