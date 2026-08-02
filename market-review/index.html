@@ -3716,8 +3716,11 @@ function updateAllPlanRates(stockIdx) {
 /* 通用：将元素滚动到视口可见区域（考虑键盘弹出） */
 function scrollToVisible(el) {
   function doScroll() {
+    if (!document.body.contains(el)) return;
     const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     const rect = el.getBoundingClientRect();
+    // 元素已在可视范围内则不滚动
+    if (rect.top > 0 && rect.bottom < vh) return;
     // 元素顶部应该在视口 30%~70% 之间
     const targetTop = vh * 0.35;
     const currentTop = rect.top;
@@ -5653,8 +5656,11 @@ renderMindsetCards();
 fetchIndexData();
 
 // 窗口尺寸变化时重新自适应字号（非全屏态；全屏态由 fitFsTable 处理）
+// 排除输入法弹起导致的 resize（有 input/textarea 聚焦时不处理）
 window.addEventListener('resize', () => {
   if (!document.getElementById('fundModule').classList.contains('fs-active')) {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
     fitNameFontSize();
   }
 });
