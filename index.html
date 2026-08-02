@@ -3395,13 +3395,13 @@ function renderStockCards() {
         `<div class="plan-item sell-point-row ${pCls}">` +
           `<div class="sp-line">` +
             `<span class="sp-label ${planLabelClass(p.planType)}">${planLabel(p.planType)} </span>` +
-            `<select class="sp-select" onchange="savePlanField(${i},${pi},'tradeMode',this.value);${hasTail?`togglePlanTail(${i},${pi})`:''}">` +
+            `<select class="sp-select" style="${!p.tradeMode ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'tradeMode',this.value);${hasTail?`togglePlanTail(${i},${pi});`:''}this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
               `<option value=""${!p.tradeMode ? ' selected' : ''}>方式</option>` +
               `<option value="条件单"${p.tradeMode==='条件单' ? ' selected' : ''}>条件单</option>` +
               `<option value="尾盘"${p.tradeMode==='尾盘' ? ' selected' : ''}>尾盘</option>` +
             `</select>` +
             (hasTail
-              ? `<select class="sp-select sp-tail-action" id="${tailId}" style="${p.tradeMode==='尾盘' ? '' : 'display:none'}" onchange="savePlanField(${i},${pi},'tailAction',this.value)">` +
+              ? `<select class="sp-select sp-tail-action" id="${tailId}" style="${p.tradeMode==='尾盘' ? '' : 'display:none'};${!p.tailAction ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'tailAction',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
                   `<option value=""${!p.tailAction ? ' selected' : ''}>操作</option>` +
                   `<option value="等一天"${p.tailAction==='等一天' ? ' selected' : ''}>等一天</option>` +
                   `<option value="直接肘"${p.tailAction==='直接肘' ? ' selected' : ''}>直接肘</option>` +
@@ -3415,13 +3415,13 @@ function renderStockCards() {
           `</div>` +
           `<div class="sp-line">` +
             (hasStage
-              ? `<select class="sp-select sp-type2-select" onchange="savePlanField(${i},${pi},'type',this.value)">` +
+              ? `<select class="sp-select sp-type2-select" style="${!p.type ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'type',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
                   `<option value=""${!p.type ? ' selected' : ''}>卖点</option>` +
                   planTypeOpts(p.planType).map(o => `<option value="${o}"${p.type===o ? ' selected' : ''}>${o}</option>`).join('') +
                 `</select>` +
                 `<span class="sp-stage-wrap">` +
                   `<span class="sp-stage-label">目前：</span>` +
-                  `<select class="sp-select sp-stage-select" onchange="savePlanField(${i},${pi},'stage',this.value)">` +
+                  `<select class="sp-select sp-stage-select" style="${!p.stage ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'stage',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
                     `<option value=""${!p.stage ? ' selected' : ''}>—</option>` +
                     `<option value="红1"${p.stage==='红1'?' selected':''}>红1</option>` +
                     `<option value="红2"${p.stage==='红2'?' selected':''}>红2</option>` +
@@ -3430,7 +3430,7 @@ function renderStockCards() {
                     `<option value="绿1"${p.stage==='绿1'?' selected':''}>绿1</option>` +
                   `</select>` +
                 `</span>`
-              : `<select class="sp-select" onchange="savePlanField(${i},${pi},'type',this.value)">` +
+              : `<select class="sp-select" style="${!p.type ? 'color:var(--text-dim)' : ''}" onchange="savePlanField(${i},${pi},'type',this.value);this.style.color=this.value?'var(--text)':'var(--text-dim)'">` +
                   `<option value=""${!p.type ? ' selected' : ''}>卖点</option>` +
                   planTypeOpts(p.planType).map(o => `<option value="${o}"${p.type===o ? ' selected' : ''}>${o}</option>`).join('') +
                 `</select>`) +
