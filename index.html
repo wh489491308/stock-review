@@ -2327,8 +2327,6 @@
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
   }
-  #planView.plan-card-bull .history-header { border-bottom-color: var(--red); }
-  #planView.plan-card-bear .history-header { border-bottom-color: var(--green); }
   #planView .history-header h2 {
     font-size: 20px;
     font-weight: 600;
@@ -5905,8 +5903,6 @@ function renderPlanView() {
   const list = document.getElementById('planList');
   if (!list) return;
 
-  const planViewEl = document.getElementById('planView');
-
   // 从所有历史快照中找日期最大的一条（不受复盘界面当前日期影响）
   const history = loadHistory();
   if (!history.length) {
@@ -6038,12 +6034,6 @@ function renderPlanView() {
   }).filter(Boolean).join('');
 
   const cardZoneCls = mvZone === '多头区间' ? 'plan-card-bull' : mvZone === '空头区间' ? 'plan-card-bear' : '';
-
-  // 同步更新 #planView 上的区间 class，联动标题横线颜色
-  if (planViewEl) {
-    planViewEl.classList.remove('plan-card-bull', 'plan-card-bear');
-    if (cardZoneCls) planViewEl.classList.add(cardZoneCls);
-  }
 
   if (!rows) {
     list.innerHTML = `<div class="plan-day-card ${cardZoneCls}">
