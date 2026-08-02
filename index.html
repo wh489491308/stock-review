@@ -5714,6 +5714,9 @@ function exportPlanImage() {
   if (!planView) return;
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
 
+  // 截图前暂停提示文字轮播
+  window._planCapturing = true;
+
   // 截图前隐藏 fixed 浮动元素（截屏按钮、保存按钮、底部导航栏）
   const planBtn = document.getElementById('planExportBtn');
   const saveBtn = document.getElementById('saveBtn');
@@ -5742,9 +5745,10 @@ function exportPlanImage() {
     if (planBtn) planBtn.style.display = btnDisp;
     if (saveBtn) saveBtn.style.display = saveDisp;
     if (bottomBar) bottomBar.style.display = barDisp;
+    window._planCapturing = false;
     const fname = '交易计划_' + dateStr + '.png';
     canvas.toBlob(blob => {
-      if (!blob) return;
+      if (!blob) { window._planCapturing = false; return; }
       const file = new File([blob], fname, { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         navigator.share({ files: [file], title: '交易计划', text: '交易计划截图' }).catch(() => {});
@@ -5762,6 +5766,7 @@ function exportPlanImage() {
     if (planBtn) planBtn.style.display = btnDisp;
     if (saveBtn) saveBtn.style.display = saveDisp;
     if (bottomBar) bottomBar.style.display = barDisp;
+    window._planCapturing = false;
     centerAlert('截图失败：' + (err && err.message ? err.message : err));
   });
 }
@@ -5923,12 +5928,16 @@ function renderPlanView() {
   // 区间提示：标签放在标题行右侧，提示文字（无框）放在卡片顶部
   let zoneTagHtml = '';
   let zoneTextHtml = '';
+  let zoneTexts = []; // 多句话轮播
   if (mvZone === '多头区间') {
     zoneTagHtml = `<span class="plan-zone-tag plan-zone-bull">多头区间</span>`;
-    zoneTextHtml = `<div class="plan-zone-text plan-zone-bull">重仓猛干！注意大盘、板块、个股高位风险</div>`;
+    zoneTexts = ['重仓猛干！不要怕，怕就会输一辈子！', '大盘、板块、个股冲刺后警惕A杀！', '位置是不是很高了？注意放飞！', '能卖就卖，给你就拿着，放兜里的才是钱！'];
   } else if (mvZone === '空头区间') {
     zoneTagHtml = `<span class="plan-zone-tag plan-zone-bear">空头区间</span>`;
-    zoneTextHtml = `<div class="plan-zone-text plan-zone-bear">只卖不买，不要手痒，管住手</div>`;
+    zoneTexts = ['只卖不买，管住手，不要开新仓！', '不要手痒，不要乱摸！', '蹬起来就卖，漏下去就肘！', '这次还不信吗？前面亏得还不疼吗？', '不要对期待抱有不切实际的幻想！'];
+  }
+  if (zoneTexts.length > 0) {
+    zoneTextHtml = `<div class="plan-zone-text ${mvZone === '多头区间' ? 'plan-zone-bull' : 'plan-zone-bear'}" id="planZoneText" data-texts="${zoneTexts.join('|||')}" data-idx="0">${zoneTexts[0]}</div>`;
   }
   document.getElementById('planZoneTag') && (document.getElementById('planZoneTag').outerHTML =
     `<span id="planZoneTag" style="display:${zoneTagHtml ? 'inline-block' : 'none'}">${zoneTagHtml}</span>`);
@@ -6044,10 +6053,32 @@ function renderPlanView() {
     ${zoneTextHtml}
     ${rows}
   </div>`;
+
+  // 启动/重置提示文字轮播
+  startPlanZoneTextCarousel();
 }
 
 function refreshPlanView() {
   renderPlanView();
+}
+
+/* 提示文字轮播：每2秒切换一句，截图时暂停 */
+let _planZoneTimer = null;
+function startPlanZoneTextCarousel() {
+  if (_planZoneTimer) clearInterval(_planZoneTimer);
+  const el = document.getElementById('planZoneText');
+  if (!el) return;
+  const raw = el.getAttribute('data-texts') || '';
+  const texts = raw.split('|||').filter(Boolean);
+  if (texts.length <= 1) return;
+  let idx = parseInt(el.getAttribute('data-idx') || '0', 10);
+  _planZoneTimer = setInterval(() => {
+    // 截图中暂停滚动
+    if (window._planCapturing) return;
+    idx = (idx + 1) % texts.length;
+    el.setAttribute('data-idx', String(idx));
+    el.textContent = texts[idx];
+  }, 2000);
 }
 
 /* 用户编辑完计划文本失焦后写入：1) 对应 history 快照内 stocks[i].plan；2) 独立 plan 字典（保留兼容旧数据） */
