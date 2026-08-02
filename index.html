@@ -5714,10 +5714,10 @@ function exportPlanImage() {
   if (!planView) return;
   if (typeof html2canvas !== 'function') { centerAlert('截图组件未加载'); return; }
 
-  // 截图前暂停提示文字轮播
+  // 截图前暂停提示文字轮播，等待文字稳定显示
   window._planCapturing = true;
 
-  // 截图前隐藏 fixed 浮动元素（截屏按钮、保存按钮、底部导航栏）
+  // 隐藏 fixed 浮动元素（截屏按钮、保存按钮、底部导航栏）
   const planBtn = document.getElementById('planExportBtn');
   const saveBtn = document.getElementById('saveBtn');
   const bottomBar = document.getElementById('bottomBar');
@@ -5729,8 +5729,10 @@ function exportPlanImage() {
   if (bottomBar) bottomBar.style.display = 'none';
 
   const dateStr = (document.getElementById('planTitleDate')?.textContent || '').replace(/\s+/g, '') || '交易计划';
-  // 截取整个 body，所见即所得
-  html2canvas(document.body, {
+
+  // 确保文字处于完全显示状态后再截图
+  function doCapture() {
+    html2canvas(document.body, {
     backgroundColor: '#0f1419',
     scale: Math.min(2, window.devicePixelRatio || 1),
     useCORS: true,
@@ -5769,6 +5771,39 @@ function exportPlanImage() {
     window._planCapturing = false;
     centerAlert('截图失败：' + (err && err.message ? err.message : err));
   });
+  }
+
+  // 等待文字稳定到 showing 状态后执行截图
+  waitForStableThenCapture();
+}
+
+function waitForStableThenCapture() {
+  const el = document.getElementById('planZoneText');
+  // 如果没有轮播元素，直接截图
+  if (!el || _planZoneState === 'showing') {
+    doCapture();
+    return;
+  }
+  if (_planZoneState === 'fading') {
+    // 正在淡出：恢复上一句话，取消 transition，直接显示
+    el.style.transition = 'none';
+    el.style.opacity = '1';
+    el.textContent = _planZonePrevText;
+    _planZoneState = 'showing';
+    // 等一帧确保渲染完成
+    requestAnimationFrame(() => doCapture());
+    return;
+  }
+  if (_planZoneState === 'fadingIn') {
+    // 正在淡入：立即跳到完全显示
+    el.style.transition = 'none';
+    el.style.opacity = '1';
+    _planZoneState = 'showing';
+    requestAnimationFrame(() => doCapture());
+    return;
+  }
+  // 兜底
+  doCapture();
 }
 
 /* =========================
@@ -6064,6 +6099,8 @@ function refreshPlanView() {
 
 /* 提示文字轮播：每2秒切换一句，截图时暂停 */
 let _planZoneTimer = null;
+let _planZoneState = 'showing'; // 'showing' | 'fading' | 'fadingIn'
+let _planZonePrevText = ''; // 淡出前的内容，用于恢复
 function startPlanZoneTextCarousel() {
   if (_planZoneTimer) clearInterval(_planZoneTimer);
   const el = document.getElementById('planZoneText');
@@ -6072,16 +6109,25 @@ function startPlanZoneTextCarousel() {
   const texts = raw.split('|||').filter(Boolean);
   if (texts.length <= 1) return;
   let idx = parseInt(el.getAttribute('data-idx') || '0', 10);
+  _planZoneState = 'showing';
   _planZoneTimer = setInterval(() => {
     if (window._planCapturing) return;
     // 淡出 → 换文字 → 淡入
+    _planZonePrevText = el.textContent;
+    _planZoneState = 'fading';
     el.style.opacity = '0';
     el.style.transition = 'opacity 0.35s ease';
     setTimeout(() => {
+      if (window._planCapturing) return;
       idx = (idx + 1) % texts.length;
       el.setAttribute('data-idx', String(idx));
       el.textContent = texts[idx];
+      _planZoneState = 'fadingIn';
       el.style.opacity = '1';
+      // 等淡入动画完成后切回 showing
+      setTimeout(() => {
+        _planZoneState = 'showing';
+      }, 350);
     }, 350);
   }, 3000);
 }
