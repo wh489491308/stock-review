@@ -157,6 +157,9 @@
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
+  .action-list-inner.menu-open { overflow: visible; }
+  .action-list-inner.menu-open .action-card:last-child { border-radius: 0 0 16px 16px; }
+  .action-list-inner.menu-open .action-card:first-child { border-radius: 16px 16px 0 0; }
   .action-card {
     display: flex;
     align-items: center;
@@ -1006,6 +1009,8 @@ function initLongPressMenu(card) {
     timer = setTimeout(() => {
       timer = null;
       closeAllMenus();
+      const inner = card.closest('.action-list-inner');
+      if (inner) inner.classList.add('menu-open');
       card.querySelector('.menu-panel').classList.add('show');
       e.preventDefault();
     }, 500);
@@ -1029,6 +1034,7 @@ function initLongPressMenu(card) {
 
 function closeAllMenus() {
   document.querySelectorAll('.menu-panel.show').forEach(m => m.classList.remove('show'));
+  document.querySelectorAll('.action-list-inner.menu-open').forEach(m => m.classList.remove('menu-open'));
 }
 
 // ==================== 动作名称编辑 ====================
