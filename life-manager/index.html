@@ -552,12 +552,12 @@
     min-width: 0;
   }
   .pm-selected-row .remove-btn {
-    width: 28px; height: 28px;
+    width: 36px; height: 36px;
     border-radius: 50%;
-    background: #f5f5f5;
-    color: #8a94a6;
+    background: #ffe4d6;
+    color: #ff7043;
     border: none;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
@@ -603,6 +603,7 @@
     cursor: pointer;
     font-family: inherit;
   }
+  .pm-btn-text.pm-btn-danger { color: #e53935; }
 
   /* 动作选择弹层：部位 tabs 单独背景 */
   .picker-part-tabs {
@@ -842,6 +843,7 @@
     <button class="pm-btn" onclick="openActionPicker()">＋ 添加动作</button>
     <button class="pm-btn pm-btn-save" onclick="confirmSavePlan()">保存计划</button>
     <button class="pm-btn-text" onclick="clearSelectedActions()">清除已添加动作</button>
+    <button class="pm-btn-text pm-btn-danger" id="deletePlanBtn" onclick="deletePlan()" style="display:none">删除计划</button>
   </div>
 </div>
 
@@ -1365,16 +1367,19 @@ let editingPlan = null; // { id, name, actionIds: [] }
 
 function openPlanEditor(existingPlan) {
   const titleEl = document.getElementById('planEditorTitle');
+  const deleteBtn = document.getElementById('deletePlanBtn');
   if (existingPlan) {
     // 编辑已有计划
-    editingPlan = { id: existingPlan.id, name: existingPlan.name, actionIds: [...(existingPlan.actionIds || [])] };
+    editingPlan = { id: existingPlan.id, name: existingPlan.name, actionIds: [...(existingPlan.actionIds || [])], _isExisting: true };
     document.getElementById('planNameInput').value = existingPlan.name;
     if (titleEl) titleEl.textContent = '修改训练计划';
+    if (deleteBtn) deleteBtn.style.display = '';
   } else {
     // 新建计划
-    editingPlan = { id: 'plan_' + Date.now(), name: '', actionIds: [] };
+    editingPlan = { id: 'plan_' + Date.now(), name: '', actionIds: [], _isExisting: false };
     document.getElementById('planNameInput').value = '';
     if (titleEl) titleEl.textContent = '新增训练计划';
+    if (deleteBtn) deleteBtn.style.display = 'none';
   }
   renderPlanSelected();
   document.getElementById('planEditorModal').classList.add('show');
@@ -1418,18 +1423,30 @@ function clearSelectedActions() {
   renderPlanSelected();
 }
 
+function deletePlan() {
+  if (!editingPlan || !editingPlan._isExisting) return;
+  if (!confirm('确认删除该计划？此操作不可撤销')) return;
+  plans = plans.filter(p => p.id !== editingPlan.id);
+  savePlans();
+  renderTrainingTab();
+  closePlanEditor();
+  toast('已删除');
+}
+
 function confirmSavePlan() {
   if (!editingPlan) return;
   const name = document.getElementById('planNameInput').value.trim();
   if (!name) { toast('请输入计划名称'); return; }
   if (editingPlan.actionIds.length === 0) { toast('请至少添加一个动作'); return; }
   editingPlan.name = name;
+  // 清理内部字段，仅保存业务数据
+  const planData = { id: editingPlan.id, name: editingPlan.name, actionIds: [...editingPlan.actionIds] };
   // 如果是已存在的 plan（编辑模式），覆盖；否则 push
   const idx = plans.findIndex(p => p.id === editingPlan.id);
   if (idx >= 0) {
-    plans[idx] = { ...editingPlan };
+    plans[idx] = planData;
   } else {
-    plans.push({ ...editingPlan });
+    plans.push(planData);
   }
   savePlans();
   renderTrainingTab();
