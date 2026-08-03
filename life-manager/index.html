@@ -784,6 +784,17 @@
     font-size: 11px;
     color: #8a94a6;
   }
+  /* 主练部位标签（用户自由输入，统一中性配色） */
+  .plan-card .main-part-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+    background: #eef0f3;
+    color: #5a6478;
+  }
 </style>
 </head>
 <body>
@@ -886,11 +897,13 @@
     <span class="right"></span>
   </div>
   <div class="page-modal-body">
-    <div class="pm-label">主练部位</div>
-    <div class="pm-part-tabs" id="planPartTabs"></div>
     <div class="pm-label">计划名称</div>
     <div class="pm-name-wrap">
       <input type="text" id="planNameInput" class="pm-name-input" placeholder="点击输入计划名称">
+    </div>
+    <div class="pm-label">主练部位</div>
+    <div class="pm-name-wrap">
+      <input type="text" id="planPartInput" class="pm-name-input" placeholder="点击输入主练部位">
     </div>
     <div class="pm-label">动作</div>
     <div class="pm-selected" id="planSelectedWrap">
@@ -974,7 +987,6 @@ function renderAll() {
   renderParts();
   renderActions();
   renderTrainingTab();
-  renderPlans();
 }
 
 function renderParts() {
@@ -1335,11 +1347,14 @@ function renderTrainingTab() {
       items.forEach(a => { if (!parts.includes(a.part)) parts.push(a.part); });
       const shown = parts.slice(0, 3);
       const more = parts.length - shown.length;
-      const mainPart = p.mainPart || PARTS[0];
+      const mainPart = p.mainPart || '';
+      const mainPartHtml = mainPart
+        ? `<span class="part-pill main-part-pill">${escapeHtml(mainPart)}</span>`
+        : '';
       return `
         <div class="plan-card" data-id="${p.id}">
           <div class="plan-content">
-            <h4><span class="part-pill part-${mainPart}" style="padding:2px 8px;font-size:11px;margin-right:6px">${mainPart}</span>—— ${escapeHtml(p.name)}</h4>
+            <h4>${escapeHtml(p.name)}${mainPart ? ' —— ' : ''}${mainPartHtml}</h4>
             <div class="meta">${items.length} 个动作</div>
             <div class="parts">
               ${shown.map(pt => `<span class="part-pill part-${pt}">${pt}</span>`).join('')}
@@ -1467,34 +1482,21 @@ function openPlanEditor(existingPlan) {
   const deleteBtn = document.getElementById('deletePlanBtn');
   if (existingPlan) {
     // 编辑已有计划
-    editingPlan = { id: existingPlan.id, name: existingPlan.name, mainPart: existingPlan.mainPart || PARTS[0], actionIds: [...(existingPlan.actionIds || [])], _isExisting: true };
+    editingPlan = { id: existingPlan.id, name: existingPlan.name, mainPart: existingPlan.mainPart || '', actionIds: [...(existingPlan.actionIds || [])], _isExisting: true };
     document.getElementById('planNameInput').value = existingPlan.name;
+    document.getElementById('planPartInput').value = existingPlan.mainPart || '';
     if (titleEl) titleEl.textContent = '修改训练计划';
     if (deleteBtn) deleteBtn.style.display = '';
   } else {
     // 新建计划
-    editingPlan = { id: 'plan_' + Date.now(), name: '', mainPart: PARTS[0], actionIds: [], _isExisting: false };
+    editingPlan = { id: 'plan_' + Date.now(), name: '', mainPart: '', actionIds: [], _isExisting: false };
     document.getElementById('planNameInput').value = '';
+    document.getElementById('planPartInput').value = '';
     if (titleEl) titleEl.textContent = '新增训练计划';
     if (deleteBtn) deleteBtn.style.display = 'none';
   }
-  renderPlanPartTabs();
   renderPlanSelected();
   document.getElementById('planEditorModal').classList.add('show');
-}
-
-function renderPlanPartTabs() {
-  const container = document.getElementById('planPartTabs');
-  if (!container || !editingPlan) return;
-  container.innerHTML = PARTS.map(p =>
-    `<span class="pm-part-tab ${p === editingPlan.mainPart ? 'active' : ''}" data-part="${p}">${p}</span>`
-  ).join('');
-  container.querySelectorAll('.pm-part-tab').forEach(t => {
-    t.onclick = () => {
-      editingPlan.mainPart = t.dataset.part;
-      renderPlanPartTabs();
-    };
-  });
 }
 
 function closePlanEditor() {
@@ -1548,9 +1550,12 @@ function deletePlan() {
 function confirmSavePlan() {
   if (!editingPlan) return;
   const name = document.getElementById('planNameInput').value.trim();
+  const mainPart = document.getElementById('planPartInput').value.trim();
   if (!name) { toast('请输入计划名称'); return; }
+  if (!mainPart) { toast('请输入主练部位'); return; }
   if (editingPlan.actionIds.length === 0) { toast('请至少添加一个动作'); return; }
   editingPlan.name = name;
+  editingPlan.mainPart = mainPart;
   // 清理内部字段，仅保存业务数据
   const planData = { id: editingPlan.id, name: editingPlan.name, mainPart: editingPlan.mainPart, actionIds: [...editingPlan.actionIds] };
   // 如果是已存在的 plan（编辑模式），覆盖；否则 push
