@@ -5553,6 +5553,7 @@ function commitAllBatch() {
     saveStore(store);
     renderStockCards();
     renderFundTable(); // 活跃市值变了，表头需刷新
+    renderTiming(); // 活跃市值变了，择时模块需刷新
   }
   // 状态提示
   if (parts.length === 0) {
