@@ -107,6 +107,10 @@
     overflow: hidden;
   }
   .action-card .menu-panel.show { display: block; }
+  .action-card .menu-panel.menu-up {
+    top: auto;
+    bottom: calc(100% + 4px);
+  }
   .action-card .menu-panel .menu-item {
     padding: 10px 16px;
     font-size: 14px;
@@ -1011,7 +1015,17 @@ function initLongPressMenu(card) {
       closeAllMenus();
       const inner = card.closest('.action-list-inner');
       if (inner) inner.classList.add('menu-open');
-      card.querySelector('.menu-panel').classList.add('show');
+      const panel = card.querySelector('.menu-panel');
+      panel.classList.add('show');
+      // 如果卡片靠近屏幕底部（下半屏），菜单向上展开
+      const cardRect = card.getBoundingClientRect();
+      const panelHeight = 88; // 两个菜单项大概高度
+      const spaceBelow = window.innerHeight - cardRect.bottom;
+      if (spaceBelow < panelHeight + 80) {
+        panel.classList.add('menu-up');
+      } else {
+        panel.classList.remove('menu-up');
+      }
       e.preventDefault();
     }, 500);
   });
@@ -1059,8 +1073,28 @@ function startEditActionName(card, id) {
   if (menuWrap) menuWrap.style.display = 'none';
   // 插入保存按钮到手柄位置
   if (handle) handle.replaceWith(saveBtn);
-  input.focus();
+
+  // 先聚焦，避免浏览器自动滚动到顶部
+  // 用 preventScroll + 自定义滚动控制位置
+  try {
+    input.focus({ preventScroll: true });
+  } catch (e) {
+    input.focus();
+  }
   input.select();
+
+  // 延迟滚动，让键盘弹出后再调整位置（保证卡片在屏幕中央偏上，不被键盘遮挡）
+  setTimeout(() => {
+    const rect = card.getBoundingClientRect();
+    const viewportH = window.innerHeight;
+    // 目标：让卡片中心在视口上部 1/3 位置（避开屏幕下半的键盘）
+    const targetY = viewportH * 0.33;
+    const currentCenter = rect.top + rect.height / 2;
+    const delta = currentCenter - targetY;
+    if (Math.abs(delta) > 20) {
+      window.scrollBy({ top: delta, behavior: 'instant' });
+    }
+  }, 350);
 
   let saved = false;
   const save = () => {
