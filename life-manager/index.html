@@ -199,14 +199,14 @@
   }
 
   /* 部位配色 */
-  .part-胸部  { background: #f8d7da; color: #c2185b; }
+  .part-胸部  { background: #fce4ec; color: #c2185b; }
   .part-背部  { background: #d0e8ff; color: #1565c0; }
   .part-肩部  { background: #e0d7ff; color: #5e35b1; }
   .part-手臂  { background: #fff3cd; color: #f57c00; }
   .part-臀腿  { background: #d4edda; color: #2e7d32; }
   .part-核心  { background: #f5d0fe; color: #7b1fa2; }
-  .part-有氧  { background: #ffe0b2; color: #e64a19; }
-  .part-HIIT { background: #ffcdd2; color: #c62828; }
+  .part-有氧  { background: #d1f5e0; color: #00838f; }
+  .part-HIIT  { background: #ffcdd2; color: #b71c1c; }
 
   /* 占位视图 */
   .placeholder {
@@ -646,7 +646,10 @@ function handleAdd() {
     list.appendChild(tempCard);
     const input = tempCard.querySelector('input');
     input.focus();
+    let saved = false;
     const save = () => {
+      if (saved) return;
+      saved = true;
       const name = (input.value || '').trim();
       if (!name) { tempCard.remove(); return; }
       actions.push({ id, part: currentPart, name, starred: false, lastTrain: null });
@@ -658,7 +661,7 @@ function handleAdd() {
     input.onblur = () => setTimeout(save, 200);
     input.onkeydown = (e) => {
       if (e.key === 'Enter') { e.preventDefault(); save(); }
-      if (e.key === 'Escape') { tempCard.remove(); }
+      if (e.key === 'Escape') { saved = true; tempCard.remove(); }
     };
   } else if (subTab === 'plan') {
     openModal('新建计划', '', (val) => {
