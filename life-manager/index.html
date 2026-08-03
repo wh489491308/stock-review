@@ -149,9 +149,12 @@
   /* 动作列表 */
   .action-list {
     padding: 12px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
+  }
+  .action-list-inner {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
   .action-card {
     display: flex;
@@ -159,10 +162,9 @@
     gap: 12px;
     padding: 14px 16px;
     background: #fff;
-    border-radius: 12px;
-    margin-bottom: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border-bottom: 1px solid #f5f5f5;
   }
+  .action-card:last-child { border-bottom: none; }
   .action-card .part-pill {
     flex-shrink: 0;
     padding: 4px 10px;
@@ -532,10 +534,11 @@
   .pm-selected-row .remove-btn {
     width: 28px; height: 28px;
     border-radius: 50%;
-    background: #ffe4d6;
-    color: #ff7043;
+    background: #f5f5f5;
+    color: #8a94a6;
     border: none;
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 600;
     line-height: 1;
     cursor: pointer;
     flex-shrink: 0;
@@ -802,7 +805,7 @@
 <div class="page-modal" id="planEditorModal">
   <div class="page-modal-header">
     <span class="back-btn" onclick="closePlanEditor()">‹</span>
-    <span class="title">新增训练计划</span>
+    <span class="title" id="planEditorTitle">新增训练计划</span>
     <span class="right"></span>
   </div>
   <div class="page-modal-body">
@@ -916,25 +919,27 @@ function renderActions() {
     list.innerHTML = `<div class="empty"><div class="icon">📭</div><div>暂无动作，点击右上角＋添加</div></div>`;
     return;
   }
-  list.innerHTML = items.map(a => {
-    const lastTrain = a.lastTrain ? `上次 ${a.lastTrain}` : '本周已练 0 天';
-    return `
-      <div class="action-card" data-id="${a.id}">
-        <span class="part-pill part-${a.part}">${a.part}</span>
-        <div class="info">
-          <div class="name">${escapeHtml(a.name)}</div>
-          <div class="sub">${lastTrain}</div>
-        </div>
-        <span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>
-        <div class="menu-wrap">
-          <div class="menu-panel">
-            <div class="menu-item" data-menu="edit">修改动作名</div>
-            <div class="menu-item danger" data-menu="del">删除</div>
+  list.innerHTML = `<div class="action-list-inner">${
+    items.map(a => {
+      const lastTrain = a.lastTrain ? `上次 ${a.lastTrain}` : '本周已练 0 天';
+      return `
+        <div class="action-card" data-id="${a.id}">
+          <span class="part-pill part-${a.part}">${a.part}</span>
+          <div class="info">
+            <div class="name">${escapeHtml(a.name)}</div>
+            <div class="sub">${lastTrain}</div>
+          </div>
+          <span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>
+          <div class="menu-wrap">
+            <div class="menu-panel">
+              <div class="menu-item" data-menu="edit">修改动作名</div>
+              <div class="menu-item danger" data-menu="del">删除</div>
+            </div>
           </div>
         </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('')
+  }</div>`;
   list.querySelectorAll('.action-card').forEach(card => {
     const id = card.dataset.id;
     // 拖拽手柄
@@ -1279,14 +1284,17 @@ function toast(msg) {
 let editingPlan = null; // { id, name, actionIds: [] }
 
 function openPlanEditor(existingPlan) {
+  const titleEl = document.getElementById('planEditorTitle');
   if (existingPlan) {
     // 编辑已有计划
     editingPlan = { id: existingPlan.id, name: existingPlan.name, actionIds: [...(existingPlan.actionIds || [])] };
     document.getElementById('planNameInput').value = existingPlan.name;
+    if (titleEl) titleEl.textContent = '修改训练计划';
   } else {
     // 新建计划
     editingPlan = { id: 'plan_' + Date.now(), name: '', actionIds: [] };
     document.getElementById('planNameInput').value = '';
+    if (titleEl) titleEl.textContent = '新增训练计划';
   }
   renderPlanSelected();
   document.getElementById('planEditorModal').classList.add('show');
@@ -1310,7 +1318,7 @@ function renderPlanSelected() {
       <div class="pm-selected-row" data-id="${a.id}">
         <span class="part-pill part-${a.part}">${a.part}</span>
         <span class="name">${escapeHtml(a.name)}</span>
-        <button class="remove-btn">−</button>
+        <button class="remove-btn">✕</button>
       </div>
     `).join('')
   }</div>`;
