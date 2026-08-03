@@ -77,27 +77,36 @@
     align-items: center;
     gap: 10px;
   }
-  .edit-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #f0f0f0;
+
+  /* 卡片下拉菜单 */
+  .action-card .menu-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .action-card .menu-panel {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    padding: 4px 0;
+    z-index: 50;
+    min-width: 130px;
+    overflow: hidden;
+  }
+  .action-card .menu-panel.show { display: block; }
+  .action-card .menu-panel .menu-item {
+    padding: 10px 16px;
+    font-size: 14px;
     color: #1a1a1a;
-    border: none;
-    font-size: 18px;
-    line-height: 1;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
   }
-  .edit-btn:active { background: #e0e0e0; }
-  .edit-btn.active {
-    background: #1a1a1a;
-    color: #fff;
-  }
-  .edit-btn.hidden { display: none; }
+  .action-card .menu-panel .menu-item:active { background: #f5f5f5; }
+  .action-card .menu-panel .menu-item.danger { color: #e53935; }
+  .action-card .menu-panel .menu-item.danger:active { background: #ffebee; }
 
   /* 部位选择（单行横向滑动） */
   .part-tabs {
@@ -694,7 +703,6 @@
     <span class="sub-tab" data-subtab="action">动作</span>
   </div>
   <div class="top-actions">
-    <button class="edit-btn hidden" id="editBtn">✎</button>
     <button class="add-btn" id="addBtn">＋</button>
   </div>
 </div>
@@ -844,7 +852,6 @@ let plans = loadJson(STORE_KEYS.plans, []);
 let mainTab = loadJson(STORE_KEYS.tab, 'training');
 let subTab = loadJson(STORE_KEYS.subTab, 'action');
 let currentPart = loadJson(STORE_KEYS.part, '胸部');
-let editMode = false;
 
 // ==================== Tab 切换 ====================
 function switchTab(tab) {
@@ -860,10 +867,6 @@ function switchTab(tab) {
 function switchSubTab(st) {
   subTab = st;
   saveJson(STORE_KEYS.subTab, st);
-  // 切换子 Tab 时退出编辑模式
-  if (editMode) { editMode = false; updateEditBtn(); }
-  // 编辑按钮仅在动作子 Tab 显示
-  document.getElementById('editBtn').classList.toggle('hidden', st !== 'action');
   document.querySelectorAll('.sub-tab').forEach(t => t.classList.toggle('active', t.dataset.subtab === st));
   document.querySelectorAll('#viewTraining .sub-view').forEach(v => v.style.display = 'none');
   document.getElementById('sub' + capitalize(st === 'training' ? 'Training' : (st === 'plan' ? 'Plan' : 'Action'))).style.display = '';
@@ -902,9 +905,6 @@ function renderActions() {
   }
   list.innerHTML = items.map(a => {
     const lastTrain = a.lastTrain ? `上次 ${a.lastTrain}` : '本周已练 0 天';
-    const rightArea = editMode
-      ? `<span class="del" data-action="del">✕</span>`
-      : `<span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>`;
     return `
       <div class="action-card" data-id="${a.id}">
         <span class="part-pill part-${a.part}">${a.part}</span>
@@ -912,33 +912,83 @@ function renderActions() {
           <div class="name">${escapeHtml(a.name)}</div>
           <div class="sub">${lastTrain}</div>
         </div>
-        ${rightArea}
+        <span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>
+        <div class="menu-wrap">
+          <div class="menu-panel">
+            <div class="menu-item" data-menu="edit">修改动作名</div>
+            <div class="menu-item danger" data-menu="del">删除</div>
+          </div>
+        </div>
       </div>
     `;
   }).join('');
   list.querySelectorAll('.action-card').forEach(card => {
     const id = card.dataset.id;
-    if (editMode) {
-      // 编辑模式：点击卡片进入名称编辑
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('[data-action="del"]')) return; // 点删除不触发编辑
-        if (card.classList.contains('editing')) return; // 已经在编辑
-        startEditActionName(card, id);
-      });
-      card.querySelector('[data-action="del"]').onclick = (e) => {
-        e.stopPropagation();
-        if (confirm('确认删除该动作？')) {
-          actions = actions.filter(x => x.id !== id);
-          saveActions();
-          renderActions();
-          toast('已删除');
-        }
-      };
-    } else {
-      // 非编辑模式：拖拽手柄绑定长按拖拽
-      initDragHandle(card, card.querySelector('[data-action="drag"]'));
+    // 拖拽手柄
+    initDragHandle(card, card.querySelector('[data-action="drag"]'));
+    // 长按卡片展开菜单（非手柄区域）
+    initLongPressMenu(card);
+    // 菜单项
+    card.querySelector('[data-menu="edit"]').onclick = (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      startEditActionName(card, id);
+    };
+    card.querySelector('[data-menu="del"]').onclick = (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      if (confirm('确认删除该动作？')) {
+        actions = actions.filter(x => x.id !== id);
+        saveActions();
+        renderActions();
+        toast('已删除');
+      }
+    };
+  });
+  // 点击页面其他区域关闭菜单
+  document.onclick = closeAllMenus;
+}
+
+// ==================== 长按展开菜单 ====================
+function initLongPressMenu(card) {
+  let timer = null;
+  let startX = 0, startY = 0;
+
+  card.addEventListener('pointerdown', (e) => {
+    // 点在手柄上不触发菜单
+    if (e.target.closest('[data-action="drag"]')) return;
+    // 点在菜单项上不触发
+    if (e.target.closest('.menu-panel')) return;
+    // 已在编辑状态不触发
+    if (card.classList.contains('editing')) return;
+    startX = e.clientX;
+    startY = e.clientY;
+    timer = setTimeout(() => {
+      timer = null;
+      closeAllMenus();
+      card.querySelector('.menu-panel').classList.add('show');
+      e.preventDefault();
+    }, 500);
+  });
+
+  card.addEventListener('pointermove', (e) => {
+    if (!timer) return;
+    if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
+      clearTimeout(timer);
+      timer = null;
     }
   });
+
+  card.addEventListener('pointerup', () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+  });
+  card.addEventListener('pointercancel', () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+  });
+}
+
+function closeAllMenus() {
+  document.querySelectorAll('.menu-panel.show').forEach(m => m.classList.remove('show'));
 }
 
 // ==================== 动作名称编辑 ====================
@@ -952,13 +1002,17 @@ function startEditActionName(card, id) {
   card.classList.add('editing');
   // 替换 name 显示为 input
   nameDiv.replaceWith(input);
-  // 右侧 ✕ 换成保存按钮
-  const delBtn = card.querySelector('[data-action="del"]');
+  // 隐藏拖拽手柄和菜单，显示保存按钮
+  const handle = card.querySelector('[data-action="drag"]');
+  const menuWrap = card.querySelector('.menu-wrap');
   const saveBtn = document.createElement('span');
   saveBtn.className = 'save-btn';
   saveBtn.textContent = '保存';
   saveBtn.dataset.action = 'save';
-  delBtn.replaceWith(saveBtn);
+  if (handle) handle.style.display = 'none';
+  if (menuWrap) menuWrap.style.display = 'none';
+  // 插入保存按钮到手柄位置
+  if (handle) handle.replaceWith(saveBtn);
   input.focus();
   input.select();
 
@@ -971,33 +1025,14 @@ function startEditActionName(card, id) {
       a.name = name;
       saveActions();
     }
-    renderActions(); // 仍在 editMode
+    renderActions();
   };
   saveBtn.onclick = (e) => { e.stopPropagation(); save(); };
   input.onkeydown = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); save(); }
     if (e.key === 'Escape') { saved = true; renderActions(); }
   };
-  // 点击卡片其他区域不触发保存（避免误触）
   input.onclick = (e) => e.stopPropagation();
-}
-
-// ==================== 编辑模式切换 ====================
-function toggleEditMode() {
-  editMode = !editMode;
-  updateEditBtn();
-  renderActions();
-}
-
-function updateEditBtn() {
-  const btn = document.getElementById('editBtn');
-  if (editMode) {
-    btn.classList.add('active');
-    btn.textContent = '✓';
-  } else {
-    btn.classList.remove('active');
-    btn.textContent = '✎';
-  }
 }
 
 // ==================== 拖拽排序 ====================
@@ -1367,7 +1402,6 @@ document.querySelectorAll('.sub-tab').forEach(t => {
 });
 
 document.getElementById('addBtn').onclick = handleAdd;
-document.getElementById('editBtn').onclick = toggleEditMode;
 
 // ==================== 初始化 ====================
 function init() {
