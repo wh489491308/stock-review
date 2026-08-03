@@ -349,6 +349,279 @@
 
   .view { display: none; }
   .view.active { display: block; }
+
+  /* ==================== 全屏弹层 ==================== */
+  .page-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #f5f6f7;
+    z-index: 300;
+    flex-direction: column;
+  }
+  .page-modal.show { display: flex; }
+
+  .page-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+  }
+  .page-modal-header .back-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #1a1a1a; cursor: pointer;
+    user-select: none;
+  }
+  .page-modal-header .title {
+    font-size: 16px; font-weight: 600; color: #1a1a1a;
+  }
+  .page-modal-header .right {
+    width: 32px;
+  }
+
+  .page-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 模版编辑：标签小标题 */
+  .pm-label {
+    font-size: 13px;
+    color: #8a94a6;
+    padding: 14px 16px 8px;
+  }
+
+  /* 模版名称输入 */
+  .pm-name-wrap {
+    padding: 0 16px 16px;
+  }
+  .pm-name-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    outline: none;
+    font-family: inherit;
+  }
+  .pm-name-input:focus { border-color: #1a1a1a; }
+  .pm-name-input::placeholder { color: #c0c4cc; font-weight: 500; }
+
+  /* 已选动作列表 */
+  .pm-selected {
+    padding: 0 16px;
+  }
+  .pm-selected-empty {
+    color: #8a94a6;
+    font-size: 13px;
+    padding: 24px 0;
+    text-align: center;
+  }
+  .pm-selected-list {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .pm-selected-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  .pm-selected-row:last-child { border-bottom: none; }
+  .pm-selected-row .part-pill {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pm-selected-row .name {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    min-width: 0;
+  }
+  .pm-selected-row .remove-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #ffe4d6;
+    color: #ff7043;
+    border: none;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+  }
+
+  /* 模版底部按钮区 */
+  .pm-footer {
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+    background: #f5f6f7;
+    flex-shrink: 0;
+  }
+  .pm-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 10px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    color: #1a1a1a;
+    font-family: inherit;
+  }
+  .pm-btn:active { background: #f0f0f0; }
+  .pm-btn-save {
+    background: #d4e9c5;
+    color: #1a1a1a;
+    border-color: #d4e9c5;
+  }
+  .pm-btn-save:active { background: #c5dab5; }
+  .pm-btn-text {
+    width: 100%;
+    background: none;
+    border: none;
+    color: #8a94a6;
+    font-size: 13px;
+    padding: 6px 0;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* 动作选择弹层：部位 tabs 单独背景 */
+  .picker-part-tabs {
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* 选择动作列表卡片 */
+  .picker-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+  }
+  .picker-card.selected { box-shadow: 0 0 0 1.5px #1a1a1a, 0 1px 3px rgba(0,0,0,0.04); }
+  .picker-card .part-pill {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .picker-card .info {
+    flex: 1;
+    min-width: 0;
+  }
+  .picker-card .name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .picker-card .name .star-icon {
+    color: #f5a623;
+    font-size: 14px;
+  }
+  .picker-card .pick-circle {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid #d0d0d0;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    color: transparent;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .picker-card.selected .pick-circle {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #fff;
+  }
+
+  /* 动作选择弹层底部 */
+  .picker-footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    flex-shrink: 0;
+  }
+  .picker-footer .count {
+    font-size: 13px;
+    color: #8a94a6;
+  }
+  .picker-footer .count b {
+    color: #1a1a1a;
+    font-weight: 600;
+    margin: 0 2px;
+  }
+  .picker-footer .picker-done {
+    padding: 10px 24px;
+    border-radius: 999px;
+    background: #d4e9c5;
+    color: #1a1a1a;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .picker-footer .picker-done:active { background: #c5dab5; }
+
+  /* 计划列表卡片：动作部位 tag */
+  .plan-card .meta {
+    font-size: 12px;
+    color: #8a94a6;
+    margin-bottom: 8px;
+  }
+  .plan-card .parts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .plan-card .parts .part-pill {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .plan-card .parts .more {
+    font-size: 11px;
+    color: #8a94a6;
+  }
 </style>
 </head>
 <body>
@@ -438,6 +711,47 @@
       <button class="btn-cancel" onclick="closeModal()">取消</button>
       <button class="btn-confirm" onclick="confirmModal()">确认</button>
     </div>
+  </div>
+</div>
+
+<!-- 模版编辑弹层 -->
+<div class="page-modal" id="planEditorModal">
+  <div class="page-modal-header">
+    <span class="back-btn" onclick="closePlanEditor()">‹</span>
+    <span class="title">新增训练模版</span>
+    <span class="right"></span>
+  </div>
+  <div class="page-modal-body">
+    <div class="pm-label">模版名称</div>
+    <div class="pm-name-wrap">
+      <input type="text" id="planNameInput" class="pm-name-input" placeholder="点击输入模版名称">
+    </div>
+    <div class="pm-label">动作</div>
+    <div class="pm-selected" id="planSelectedWrap">
+      <div class="pm-selected-empty">还没有动作，先添加几个</div>
+    </div>
+  </div>
+  <div class="pm-footer">
+    <button class="pm-btn" onclick="openActionPicker()">＋ 添加动作</button>
+    <button class="pm-btn pm-btn-save" onclick="confirmSavePlan()">保存模版</button>
+    <button class="pm-btn-text" onclick="clearSelectedActions()">清除已添加动作</button>
+  </div>
+</div>
+
+<!-- 动作选择弹层 -->
+<div class="page-modal" id="actionPickerModal">
+  <div class="page-modal-header">
+    <span class="back-btn" onclick="closeActionPicker()">‹</span>
+    <span class="title">选择动作</span>
+    <span class="right"></span>
+  </div>
+  <div class="picker-part-tabs">
+    <div class="part-tabs" id="pickerPartTabs"></div>
+  </div>
+  <div class="page-modal-body" id="pickerActionList"></div>
+  <div class="picker-footer">
+    <span class="count">已选 <b id="pickerCount">0</b> 个动作</span>
+    <button class="picker-done" onclick="confirmPickActions()">完成选择</button>
   </div>
 </div>
 
@@ -584,11 +898,20 @@ function renderTrainingTab() {
       return;
     }
     container.innerHTML = plans.map(p => {
-      const count = (p.actionIds || []).length;
+      const ids = p.actionIds || [];
+      const items = ids.map(id => actions.find(a => a.id === id)).filter(Boolean);
+      const parts = [];
+      items.forEach(a => { if (!parts.includes(a.part)) parts.push(a.part); });
+      const shown = parts.slice(0, 3);
+      const more = parts.length - shown.length;
       return `
         <div class="plan-card" data-id="${p.id}">
           <h4>${escapeHtml(p.name)}</h4>
-          <div class="meta">${count} 个动作</div>
+          <div class="meta">${items.length} 个动作</div>
+          <div class="parts">
+            ${shown.map(pt => `<span class="part-pill part-${pt}">${pt}</span>`).join('')}
+            ${more > 0 ? `<span class="more">+${more}</span>` : ''}
+          </div>
         </div>
       `;
     }).join('');
@@ -631,13 +954,7 @@ function handleAdd() {
       if (e.key === 'Escape') { saved = true; tempCard.remove(); }
     };
   } else if (subTab === 'plan') {
-    openModal('新建计划', '', (val) => {
-      if (!val) return;
-      plans.push({ id: 'plan_' + Date.now(), name: val, actionIds: [] });
-      savePlans();
-      renderTrainingTab();
-      toast('已添加');
-    });
+    openPlanEditor();
   } else if (subTab === 'training') {
     toast('训练 Tab：暂无添加功能');
   }
@@ -679,6 +996,143 @@ function toast(msg) {
   t.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ==================== 模版编辑器 ====================
+// 临时状态：当前正在编辑的模版
+let editingPlan = null; // { id, name, actionIds: [] }
+
+function openPlanEditor() {
+  editingPlan = { id: 'plan_' + Date.now(), name: '', actionIds: [] };
+  document.getElementById('planNameInput').value = '';
+  renderPlanSelected();
+  document.getElementById('planEditorModal').classList.add('show');
+}
+
+function closePlanEditor() {
+  document.getElementById('planEditorModal').classList.remove('show');
+  editingPlan = null;
+}
+
+function renderPlanSelected() {
+  const wrap = document.getElementById('planSelectedWrap');
+  const ids = editingPlan.actionIds;
+  const items = ids.map(id => actions.find(a => a.id === id)).filter(Boolean);
+  if (items.length === 0) {
+    wrap.innerHTML = '<div class="pm-selected-empty">还没有动作，先添加几个</div>';
+    return;
+  }
+  wrap.innerHTML = `<div class="pm-selected-list">${
+    items.map(a => `
+      <div class="pm-selected-row" data-id="${a.id}">
+        <span class="part-pill part-${a.part}">${a.part}</span>
+        <span class="name">${escapeHtml(a.name)}</span>
+        <button class="remove-btn">−</button>
+      </div>
+    `).join('')
+  }</div>`;
+  wrap.querySelectorAll('.pm-selected-row').forEach(row => {
+    row.querySelector('.remove-btn').onclick = () => {
+      const id = row.dataset.id;
+      editingPlan.actionIds = editingPlan.actionIds.filter(x => x !== id);
+      renderPlanSelected();
+    };
+  });
+}
+
+function clearSelectedActions() {
+  if (!editingPlan) return;
+  if (editingPlan.actionIds.length === 0) { toast('暂无动作可清除'); return; }
+  editingPlan.actionIds = [];
+  renderPlanSelected();
+}
+
+function confirmSavePlan() {
+  if (!editingPlan) return;
+  const name = document.getElementById('planNameInput').value.trim();
+  if (!name) { toast('请输入模版名称'); return; }
+  if (editingPlan.actionIds.length === 0) { toast('请至少添加一个动作'); return; }
+  editingPlan.name = name;
+  // 如果是已存在的 plan（编辑模式），覆盖；否则 push
+  const idx = plans.findIndex(p => p.id === editingPlan.id);
+  if (idx >= 0) {
+    plans[idx] = { ...editingPlan };
+  } else {
+    plans.push({ ...editingPlan });
+  }
+  savePlans();
+  renderTrainingTab();
+  closePlanEditor();
+  toast('已保存');
+}
+
+// ==================== 动作选择器 ====================
+let pickerSelected = new Set(); // 当前弹层中选中的动作 id
+let pickerPart = '胸部';
+
+function openActionPicker() {
+  pickerSelected = new Set(editingPlan.actionIds); // 默认勾选已添加的
+  pickerPart = currentPart;
+  renderPickerParts();
+  renderPickerActions();
+  document.getElementById('actionPickerModal').classList.add('show');
+}
+
+function closeActionPicker() {
+  document.getElementById('actionPickerModal').classList.remove('show');
+}
+
+function renderPickerParts() {
+  const c = document.getElementById('pickerPartTabs');
+  c.innerHTML = PARTS.map(p =>
+    `<span class="part-tab ${p === pickerPart ? 'active' : ''}" data-part="${p}">${p}</span>`
+  ).join('');
+  c.querySelectorAll('.part-tab').forEach(t => {
+    t.onclick = () => {
+      pickerPart = t.dataset.part;
+      renderPickerParts();
+      renderPickerActions();
+    };
+  });
+}
+
+function renderPickerActions() {
+  const list = document.getElementById('pickerActionList');
+  const items = actions.filter(a => a.part === pickerPart);
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="icon">📭</div><div>该部位暂无动作，请先添加</div></div>';
+    document.getElementById('pickerCount').textContent = pickerSelected.size;
+    return;
+  }
+  list.innerHTML = items.map(a => {
+    const sel = pickerSelected.has(a.id);
+    return `
+      <div class="picker-card ${sel ? 'selected' : ''}" data-id="${a.id}">
+        <span class="part-pill part-${a.part}">${a.part}</span>
+        <div class="info">
+          <div class="name">${escapeHtml(a.name)}${a.starred ? ' <span class="star-icon">★</span>' : ''}</div>
+        </div>
+        <span class="pick-circle">✓</span>
+      </div>
+    `;
+  }).join('');
+  list.querySelectorAll('.picker-card').forEach(card => {
+    card.onclick = () => {
+      const id = card.dataset.id;
+      if (pickerSelected.has(id)) pickerSelected.delete(id);
+      else pickerSelected.add(id);
+      card.classList.toggle('selected');
+      document.getElementById('pickerCount').textContent = pickerSelected.size;
+    };
+  });
+  document.getElementById('pickerCount').textContent = pickerSelected.size;
+}
+
+function confirmPickActions() {
+  if (!editingPlan) return;
+  editingPlan.actionIds = Array.from(pickerSelected);
+  closeActionPicker();
+  renderPlanSelected();
 }
 
 // ==================== 事件绑定 ====================
