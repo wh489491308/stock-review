@@ -71,6 +71,34 @@
   }
   .add-btn:active { background: #e0e0e0; }
 
+  /* 顶部操作按钮组 */
+  .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .edit-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    border: none;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+  .edit-btn:active { background: #e0e0e0; }
+  .edit-btn.active {
+    background: #1a1a1a;
+    color: #fff;
+  }
+  .edit-btn.hidden { display: none; }
+
   /* 部位选择（单行横向滑动） */
   .part-tabs {
     display: flex;
@@ -137,15 +165,18 @@
     font-size: 12px;
     color: #8a94a6;
   }
-  .action-card .star {
+  .action-card .drag-handle {
     flex-shrink: 0;
-    color: #ccc;
-    font-size: 22px;
-    cursor: pointer;
+    color: #c0c4cc;
+    font-size: 18px;
+    cursor: grab;
     user-select: none;
     line-height: 1;
+    touch-action: none;
+    padding: 4px 2px;
+    margin-left: 4px;
   }
-  .action-card .star.active { color: #f5a623; }
+  .action-card .drag-handle:active { cursor: grabbing; }
   .action-card .del {
     flex-shrink: 0;
     color: #ccc;
@@ -153,6 +184,10 @@
     cursor: pointer;
     user-select: none;
     margin-left: 8px;
+  }
+  .action-card.dragging {
+    opacity: 0.5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
 
   /* 新增行（行内编辑） */
@@ -639,7 +674,10 @@
     <span class="sub-tab" data-subtab="plan">计划</span>
     <span class="sub-tab" data-subtab="action">动作</span>
   </div>
-  <button class="add-btn" id="addBtn">＋</button>
+  <div class="top-actions">
+    <button class="edit-btn hidden" id="editBtn">✎</button>
+    <button class="add-btn" id="addBtn">＋</button>
+  </div>
 </div>
 
 <!-- 训练 Tab 视图 -->
@@ -787,6 +825,7 @@ let plans = loadJson(STORE_KEYS.plans, []);
 let mainTab = loadJson(STORE_KEYS.tab, 'training');
 let subTab = loadJson(STORE_KEYS.subTab, 'action');
 let currentPart = loadJson(STORE_KEYS.part, '胸部');
+let editMode = false;
 
 // ==================== Tab 切换 ====================
 function switchTab(tab) {
@@ -802,6 +841,10 @@ function switchTab(tab) {
 function switchSubTab(st) {
   subTab = st;
   saveJson(STORE_KEYS.subTab, st);
+  // 切换子 Tab 时退出编辑模式
+  if (editMode) { editMode = false; updateEditBtn(); }
+  // 编辑按钮仅在动作子 Tab 显示
+  document.getElementById('editBtn').classList.toggle('hidden', st !== 'action');
   document.querySelectorAll('.sub-tab').forEach(t => t.classList.toggle('active', t.dataset.subtab === st));
   document.querySelectorAll('#viewTraining .sub-view').forEach(v => v.style.display = 'none');
   document.getElementById('sub' + capitalize(st === 'training' ? 'Training' : (st === 'plan' ? 'Plan' : 'Action'))).style.display = '';
@@ -840,6 +883,9 @@ function renderActions() {
   }
   list.innerHTML = items.map(a => {
     const lastTrain = a.lastTrain ? `上次 ${a.lastTrain}` : '本周已练 0 天';
+    const rightArea = editMode
+      ? `<span class="del" data-action="del">✕</span>`
+      : `<span class="drag-handle" data-action="drag">⇕</span>`;
     return `
       <div class="action-card" data-id="${a.id}">
         <span class="part-pill part-${a.part}">${a.part}</span>
@@ -847,26 +893,174 @@ function renderActions() {
           <div class="name">${escapeHtml(a.name)}</div>
           <div class="sub">${lastTrain}</div>
         </div>
-        <span class="star ${a.starred ? 'active' : ''}" data-action="star">${a.starred ? '★' : '☆'}</span>
-        <span class="del" data-action="del">✕</span>
+        ${rightArea}
       </div>
     `;
   }).join('');
   list.querySelectorAll('.action-card').forEach(card => {
     const id = card.dataset.id;
-    card.querySelector('[data-action="star"]').onclick = () => {
-      const a = actions.find(x => x.id === id);
-      if (a) { a.starred = !a.starred; saveActions(); renderActions(); }
-    };
-    card.querySelector('[data-action="del"]').onclick = () => {
-      if (confirm('确认删除该动作？')) {
-        actions = actions.filter(x => x.id !== id);
-        saveActions();
-        renderActions();
-        toast('已删除');
-      }
-    };
+    if (editMode) {
+      // 编辑模式：点击卡片进入名称编辑
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action="del"]')) return; // 点删除不触发编辑
+        if (card.classList.contains('editing')) return; // 已经在编辑
+        startEditActionName(card, id);
+      });
+      card.querySelector('[data-action="del"]').onclick = (e) => {
+        e.stopPropagation();
+        if (confirm('确认删除该动作？')) {
+          actions = actions.filter(x => x.id !== id);
+          saveActions();
+          renderActions();
+          toast('已删除');
+        }
+      };
+    } else {
+      // 非编辑模式：拖拽手柄绑定长按拖拽
+      initDragHandle(card, card.querySelector('[data-action="drag"]'));
+    }
   });
+}
+
+// ==================== 动作名称编辑 ====================
+function startEditActionName(card, id) {
+  const a = actions.find(x => x.id === id);
+  if (!a) return;
+  const nameDiv = card.querySelector('.name');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = a.name;
+  card.classList.add('editing');
+  // 替换 name 显示为 input
+  nameDiv.replaceWith(input);
+  // 右侧 ✕ 换成保存按钮
+  const delBtn = card.querySelector('[data-action="del"]');
+  const saveBtn = document.createElement('span');
+  saveBtn.className = 'save-btn';
+  saveBtn.textContent = '保存';
+  saveBtn.dataset.action = 'save';
+  delBtn.replaceWith(saveBtn);
+  input.focus();
+  input.select();
+
+  let saved = false;
+  const save = () => {
+    if (saved) return;
+    saved = true;
+    const name = (input.value || '').trim();
+    if (name && name !== a.name) {
+      a.name = name;
+      saveActions();
+    }
+    renderActions(); // 仍在 editMode
+  };
+  saveBtn.onclick = (e) => { e.stopPropagation(); save(); };
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { saved = true; renderActions(); }
+  };
+  // 点击卡片其他区域不触发保存（避免误触）
+  input.onclick = (e) => e.stopPropagation();
+}
+
+// ==================== 编辑模式切换 ====================
+function toggleEditMode() {
+  editMode = !editMode;
+  updateEditBtn();
+  renderActions();
+}
+
+function updateEditBtn() {
+  const btn = document.getElementById('editBtn');
+  if (editMode) {
+    btn.classList.add('active');
+    btn.textContent = '✓';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '✎';
+  }
+}
+
+// ==================== 拖拽排序 ====================
+// 全局拖拽状态（document 监听器只绑定一次）
+let dragState = null; // { card, handle, startY, dragging, timer, currentOver }
+
+function initDragHandle(card, handle) {
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    dragState = {
+      card, handle, startY: e.clientY,
+      dragging: false, timer: null, currentOver: null
+    };
+    // 长按 300ms 后进入拖拽
+    dragState.timer = setTimeout(() => {
+      if (!dragState) return;
+      dragState.dragging = true;
+      dragState.card.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+    }, 300);
+  });
+}
+
+// 全局监听器（只绑定一次）
+document.addEventListener('pointermove', (e) => {
+  if (!dragState) return;
+  if (!dragState.dragging) {
+    // 长按等待期间移动超过 10px 则取消
+    if (dragState.timer && Math.abs(e.clientY - dragState.startY) > 10) {
+      clearTimeout(dragState.timer);
+      dragState.timer = null;
+    }
+    return;
+  }
+  e.preventDefault();
+  const card = dragState.card;
+  const list = card.parentNode;
+  const cards = [...list.querySelectorAll('.action-card:not(.dragging)')];
+  let insertBefore = null;
+  for (const c of cards) {
+    const rect = c.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    if (e.clientY < midY) { insertBefore = c; break; }
+  }
+  if (insertBefore !== dragState.currentOver) {
+    dragState.currentOver = insertBefore;
+    if (insertBefore) list.insertBefore(card, insertBefore);
+    else list.appendChild(card);
+  }
+});
+
+function endDrag() {
+  if (!dragState) return;
+  if (dragState.timer) { clearTimeout(dragState.timer); }
+  if (dragState.dragging) {
+    dragState.card.classList.remove('dragging');
+    document.body.style.userSelect = '';
+    syncActionOrderFromDOM();
+  }
+  dragState = null;
+}
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+
+function syncActionOrderFromDOM() {
+  const list = document.getElementById('actionList');
+  const cardEls = [...list.querySelectorAll('.action-card')];
+  const newOrderIds = cardEls.map(el => el.dataset.id);
+  // 重建 actions：非当前部位的保持原位，当前部位的按新顺序插入
+  const partActions = newOrderIds.map(id => actions.find(a => a.id === id)).filter(Boolean);
+  const result = [];
+  let partIdx = 0;
+  for (const a of actions) {
+    if (a.part === currentPart) {
+      if (partIdx < partActions.length) result.push(partActions[partIdx++]);
+    } else {
+      result.push(a);
+    }
+  }
+  while (partIdx < partActions.length) result.push(partActions[partIdx++]);
+  actions = result;
+  saveActions();
 }
 
 function renderTrainingTab() {
@@ -1151,6 +1345,7 @@ document.querySelectorAll('.sub-tab').forEach(t => {
 });
 
 document.getElementById('addBtn').onclick = handleAdd;
+document.getElementById('editBtn').onclick = toggleEditMode;
 
 // ==================== 初始化 ====================
 function init() {
