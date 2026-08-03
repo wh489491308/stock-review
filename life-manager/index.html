@@ -802,13 +802,13 @@
 <div class="page-modal" id="planEditorModal">
   <div class="page-modal-header">
     <span class="back-btn" onclick="closePlanEditor()">‹</span>
-    <span class="title">新增训练模版</span>
+    <span class="title">新增训练计划</span>
     <span class="right"></span>
   </div>
   <div class="page-modal-body">
-    <div class="pm-label">模版名称</div>
+    <div class="pm-label">计划名称</div>
     <div class="pm-name-wrap">
-      <input type="text" id="planNameInput" class="pm-name-input" placeholder="点击输入模版名称">
+      <input type="text" id="planNameInput" class="pm-name-input" placeholder="点击输入计划名称">
     </div>
     <div class="pm-label">动作</div>
     <div class="pm-selected" id="planSelectedWrap">
@@ -817,7 +817,7 @@
   </div>
   <div class="pm-footer">
     <button class="pm-btn" onclick="openActionPicker()">＋ 添加动作</button>
-    <button class="pm-btn pm-btn-save" onclick="confirmSavePlan()">保存模版</button>
+    <button class="pm-btn pm-btn-save" onclick="confirmSavePlan()">保存计划</button>
     <button class="pm-btn-text" onclick="clearSelectedActions()">清除已添加动作</button>
   </div>
 </div>
@@ -1333,7 +1333,7 @@ function clearSelectedActions() {
 function confirmSavePlan() {
   if (!editingPlan) return;
   const name = document.getElementById('planNameInput').value.trim();
-  if (!name) { toast('请输入模版名称'); return; }
+  if (!name) { toast('请输入计划名称'); return; }
   if (editingPlan.actionIds.length === 0) { toast('请至少添加一个动作'); return; }
   editingPlan.name = name;
   // 如果是已存在的 plan（编辑模式），覆盖；否则 push
