@@ -853,6 +853,19 @@
     background: #ffe4d6;
     color: #e65100;
   }
+  .train-header .train-finish-btn {
+    flex-shrink: 0;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .train-header .train-finish-btn:active { background: #333; }
   .train-timer-wrap {
     display: none;
     align-items: center;
@@ -1865,11 +1878,18 @@ function startTrainingWithPlan(plan) {
     planId: plan.id,
     planName: plan.name,
     mainPart: plan.mainPart || '',
-    actions: items.map((a, i) => ({
-      id: a.id, name: a.name, part: a.part,
-      expanded: i === 0, // 第一个动作默认展开
-      sets: [{ weight: '', reps: '', done: false }] // 默认一组空数据
-    })),
+    actions: items.map((a, i) => {
+      // 从动作的历史记录中取上次训练数据作为默认值
+      const lastHistory = a.history && a.history.length > 0 ? a.history[a.history.length - 1] : null;
+      const prevSets = lastHistory && lastHistory.sets && lastHistory.sets.length > 0
+        ? lastHistory.sets.map(s => ({ weight: s.weight || '', reps: s.reps || '', done: false }))
+        : [{ weight: '', reps: '', done: false }];
+      return {
+        id: a.id, name: a.name, part: a.part,
+        expanded: i === 0,
+        sets: prevSets
+      };
+    }),
     running: false, elapsed: 0, timerId: null
   };
   // 切到训练子 Tab
@@ -1883,7 +1903,7 @@ function renderTrainSession() {
     return;
   }
 
-  // 顶部：标题 + 开始/暂停 + 计时器
+  // 顶部：标题 + 开始/结束 + 计时器
   const mainPartText = trainSession.mainPart ? '<span class="sep">——</span>' + escapeHtml(trainSession.mainPart) : '';
   const btnText = trainSession.running ? '暂停' : '开始';
   const btnClass = 'train-start-btn' + (trainSession.running ? ' running' : '');
@@ -1897,6 +1917,7 @@ function renderTrainSession() {
         <span class="timer-display" id="trainTimerDisplay">${timerDisplay}</span>
       </div>
       <button class="${btnClass}" id="trainStartBtn">${btnText}</button>
+      <button class="train-finish-btn" id="trainFinishBtn">结束</button>
     </div>
     <div class="train-actions" id="trainActions">
       ${trainSession.actions.map((a, i) => renderTrainActionBlock(a, i)).join('')}
@@ -1906,6 +1927,9 @@ function renderTrainSession() {
   // 绑定开始/暂停按钮
   const startBtn = document.getElementById('trainStartBtn');
   if (startBtn) startBtn.onclick = toggleTrainTimer;
+  // 绑定结束按钮
+  const finishBtn = document.getElementById('trainFinishBtn');
+  if (finishBtn) finishBtn.onclick = finishTraining;
 
   // 绑定动作区块
   container.querySelectorAll('.train-action-block').forEach(block => {
@@ -2040,7 +2064,7 @@ function toggleTrainTimer() {
       trainSession.timerId = null;
     }
   } else {
-    // 开始
+    // 开始/继续
     trainSession.running = true;
     trainSession.timerId = setInterval(() => {
       trainSession.elapsed++;
@@ -2048,7 +2072,7 @@ function toggleTrainTimer() {
       if (display) display.textContent = formatTime(trainSession.elapsed);
     }, 1000);
   }
-  // 更新按钮显示
+  // 更新开始/暂停按钮显示
   const btn = document.getElementById('trainStartBtn');
   if (btn) {
     btn.textContent = trainSession.running ? '暂停' : '开始';
@@ -2056,6 +2080,39 @@ function toggleTrainTimer() {
   }
   const timerWrap = document.querySelector('.train-timer-wrap');
   if (timerWrap) timerWrap.classList.add('show');
+}
+
+// 结束训练：保存数据到动作历史记录
+function finishTraining() {
+  if (!trainSession) return;
+  // 停止计时器
+  trainSession.running = false;
+  if (trainSession.timerId) {
+    clearInterval(trainSession.timerId);
+    trainSession.timerId = null;
+  }
+  // 把本次训练数据保存到对应动作的 history 字段
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  trainSession.actions.forEach(sa => {
+    const action = actions.find(a => a.id === sa.id);
+    if (!action) return;
+    // 只保存有数据的组（重量或次数非空）
+    const validSets = sa.sets.filter(s => s.weight || s.reps);
+    if (validSets.length === 0) return;
+    if (!action.history) action.history = [];
+    action.history.push({
+      date: dateStr,
+      sets: validSets.map(s => ({ weight: s.weight, reps: s.reps }))
+    });
+    // 更新 lastTrain 显示
+    action.lastTrain = dateStr;
+  });
+  saveActions();
+  toast('训练数据已保存');
+  // 清空训练会话
+  trainSession = null;
+  renderTrainSession();
 }
 
 function startRestCountdown(btn, onComplete) {
