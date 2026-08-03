@@ -187,6 +187,15 @@
     font-size: 12px;
     color: #8a94a6;
   }
+  .action-card .star {
+    flex-shrink: 0;
+    color: #ccc;
+    font-size: 22px;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+  }
+  .action-card .star.active { color: #f5a623; }
   .action-card {
     -webkit-user-select: none;
     user-select: none;
@@ -915,7 +924,10 @@ function renderParts() {
 
 function renderActions() {
   const list = document.getElementById('actionList');
-  const items = actions.filter(a => a.part === currentPart);
+  // 排序：starred 优先，同状态内保持原顺序
+  const items = actions
+    .filter(a => a.part === currentPart)
+    .sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
   if (items.length === 0) {
     list.innerHTML = `<div class="empty"><div class="icon">📭</div><div>暂无动作，点击右上角＋添加</div></div>`;
     return;
@@ -930,6 +942,7 @@ function renderActions() {
             <div class="name">${escapeHtml(a.name)}</div>
             <div class="sub">${lastTrain}</div>
           </div>
+          <span class="star ${a.starred ? 'active' : ''}" data-action="star">${a.starred ? '★' : '☆'}</span>
           <span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>
           <div class="menu-wrap">
             <div class="menu-panel">
@@ -943,9 +956,15 @@ function renderActions() {
   }</div>`;
   list.querySelectorAll('.action-card').forEach(card => {
     const id = card.dataset.id;
+    // 五角星：点击切换置顶
+    card.querySelector('[data-action="star"]').onclick = (e) => {
+      e.stopPropagation();
+      const a = actions.find(x => x.id === id);
+      if (a) { a.starred = !a.starred; saveActions(); renderActions(); }
+    };
     // 拖拽手柄
     initDragHandle(card, card.querySelector('[data-action="drag"]'));
-    // 长按卡片展开菜单（非手柄区域）
+    // 长按卡片展开菜单（非手柄/星标区域）
     initLongPressMenu(card);
     // 菜单项
     card.querySelector('[data-menu="edit"]').onclick = (e) => {
@@ -976,6 +995,8 @@ function initLongPressMenu(card) {
   card.addEventListener('pointerdown', (e) => {
     // 点在手柄上不触发菜单
     if (e.target.closest('[data-action="drag"]')) return;
+    // 点在五角星上不触发菜单
+    if (e.target.closest('[data-action="star"]')) return;
     // 点在菜单项上不触发
     if (e.target.closest('.menu-panel')) return;
     // 已在编辑状态不触发
@@ -1203,10 +1224,15 @@ function renderTrainingTab() {
 // ==================== 添加按钮 ====================
 function handleAdd() {
   if (subTab === 'action') {
-    // 动作 Tab：在当前选中部位末尾添加一个编辑行
+    // 动作 Tab：在当前选中部位最上方添加一个编辑行
     const id = 'act_' + Date.now();
     const list = document.getElementById('actionList');
-    // 临时把编辑行插入到列表底部
+    let inner = list.querySelector('.action-list-inner');
+    // 如果列表为空（显示 empty 占位），先清空
+    if (!inner) {
+      list.innerHTML = '<div class="action-list-inner"></div>';
+      inner = list.querySelector('.action-list-inner');
+    }
     const tempCard = document.createElement('div');
     tempCard.className = 'action-card editing';
     tempCard.dataset.id = id;
@@ -1215,7 +1241,8 @@ function handleAdd() {
       <div class="info"><input type="text" placeholder="输入动作名称..." autofocus></div>
       <span class="save-btn">保存</span>
     `;
-    list.appendChild(tempCard);
+    // 插入到最前面
+    inner.insertBefore(tempCard, inner.firstChild);
     const input = tempCard.querySelector('input');
     input.focus();
     let saved = false;
@@ -1224,6 +1251,15 @@ function handleAdd() {
       saved = true;
       const name = (input.value || '').trim();
       if (!name) { tempCard.remove(); return; }
+      // 检查重名（全局）
+      const exists = actions.some(a => a.name === name);
+      if (exists) {
+        toast('动作已存在');
+        saved = false; // 允许继续编辑
+        input.focus();
+        input.select();
+        return;
+      }
       actions.push({ id, part: currentPart, name, starred: false, lastTrain: null });
       saveActions();
       renderActions();
