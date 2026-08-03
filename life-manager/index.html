@@ -784,17 +784,6 @@
     font-size: 11px;
     color: #8a94a6;
   }
-  /* 主练部位标签（用户自由输入，统一中性配色） */
-  .plan-card .main-part-pill {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
-    vertical-align: middle;
-    background: #eef0f3;
-    color: #5a6478;
-  }
 </style>
 </head>
 <body>
@@ -1348,13 +1337,11 @@ function renderTrainingTab() {
       const shown = parts.slice(0, 3);
       const more = parts.length - shown.length;
       const mainPart = p.mainPart || '';
-      const mainPartHtml = mainPart
-        ? `<span class="part-pill main-part-pill">${escapeHtml(mainPart)}</span>`
-        : '';
+      const mainPartText = mainPart ? ' —— ' + escapeHtml(mainPart) : '';
       return `
         <div class="plan-card" data-id="${p.id}">
           <div class="plan-content">
-            <h4>${escapeHtml(p.name)}${mainPart ? ' —— ' : ''}${mainPartHtml}</h4>
+            <h4>${escapeHtml(p.name)}${mainPartText}</h4>
             <div class="meta">${items.length} 个动作</div>
             <div class="parts">
               ${shown.map(pt => `<span class="part-pill part-${pt}">${pt}</span>`).join('')}
