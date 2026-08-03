@@ -1,0 +1,12 @@
+{
+  "name": "生活管理",
+  "short_name": "生活管理",
+  "description": "个人生活管理工作台：训练、计划、日历、个人",
+  "start_url": "/stock-review/life-manager/",
+  "scope": "/stock-review/life-manager/",
+  "display": "standalone",
+  "background_color": "#f5f6f7",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "icons": []
+}

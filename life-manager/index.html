@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>生活管理</title>
+<link rel="manifest" href="/stock-review/life-manager/manifest.json">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="生活管理">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="生活管理">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: #f5f6f7;
+    color: #1a1a1a;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  body { padding-bottom: 70px; min-height: 100vh; }
+
+  /* 顶部栏：子 Tab + 添加按钮 */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 12px;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .sub-tabs {
+    display: flex;
+    gap: 8px;
+  }
+  .sub-tab {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    color: #8a94a6;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sub-tab.active {
+    background: #1a1a1a;
+    color: #fff;
+    font-weight: 600;
+  }
+  .add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    border: none;
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .add-btn:active { background: #e0e0e0; }
+
+  /* 二级 Tab（按部位/常用/全部，仅动作 Tab 显示） */
+  .filter-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .filter-tab {
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .filter-tab.active {
+    background: #1a1a1a;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* 部位选择 */
+  .part-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #fff;
+  }
+  .part-tab {
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .part-tab.active {
+    background: #1a1a1a;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* 动作列表 */
+  .action-list {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .action-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .action-card .part-pill {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .action-card .info {
+    flex: 1;
+    min-width: 0;
+  }
+  .action-card .name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+  }
+  .action-card .sub {
+    font-size: 12px;
+    color: #8a94a6;
+  }
+  .action-card .star {
+    flex-shrink: 0;
+    color: #ccc;
+    font-size: 22px;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+  }
+  .action-card .star.active { color: #f5a623; }
+  .action-card .del {
+    flex-shrink: 0;
+    color: #ccc;
+    font-size: 18px;
+    cursor: pointer;
+    user-select: none;
+    margin-left: 8px;
+  }
+
+  /* 新增行（行内编辑） */
+  .action-card.editing {
+    background: #fffbf0;
+  }
+  .action-card input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    width: 100%;
+    font-family: inherit;
+  }
+  .action-card .save-btn {
+    flex-shrink: 0;
+    color: #1a1a1a;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 12px;
+    background: #f0f0f0;
+    border-radius: 999px;
+    margin-left: 8px;
+  }
+
+  /* 部位配色 */
+  .part-胸部  { background: #f8d7da; color: #c2185b; }
+  .part-背部  { background: #d0e8ff; color: #1565c0; }
+  .part-肩部  { background: #e0d7ff; color: #5e35b1; }
+  .part-手臂  { background: #fff3cd; color: #f57c00; }
+  .part-臀腿  { background: #d4edda; color: #2e7d32; }
+  .part-核心  { background: #f5d0fe; color: #7b1fa2; }
+  .part-有氧  { background: #ffe0b2; color: #e64a19; }
+  .part-HIIT { background: #ffcdd2; color: #c62828; }
+
+  /* 占位视图 */
+  .placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    color: #8a94a6;
+    text-align: center;
+  }
+  .placeholder .icon { font-size: 48px; margin-bottom: 16px; }
+  .placeholder h2 { font-size: 18px; color: #1a1a1a; margin-bottom: 6px; }
+  .placeholder p { font-size: 13px; }
+
+  /* 训练 Tab 特殊页 */
+  .training-summary {
+    margin: 16px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .training-summary h3 { font-size: 16px; margin-bottom: 8px; }
+  .training-summary .today { font-size: 13px; color: #8a94a6; }
+  .training-summary .actions { margin-top: 12px; }
+  .training-summary .actions li {
+    list-style: none;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .training-summary .actions li:last-child { border-bottom: none; }
+  .training-summary .actions input[type="checkbox"] { width: 18px; height: 18px; }
+
+  /* 计划 Tab */
+  .plan-list { padding: 12px 16px; }
+  .plan-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .plan-card h4 { font-size: 15px; margin-bottom: 6px; }
+  .plan-card .meta { font-size: 12px; color: #8a94a6; }
+
+  /* 空状态 */
+  .empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: #8a94a6;
+    font-size: 13px;
+  }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* 底部导航 */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    border: none;
+    background: none;
+    color: #8a94a6;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  .nav-btn .nav-icon { font-size: 22px; margin-bottom: 2px; line-height: 1; }
+  .nav-btn.active { color: #1a1a1a; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.78);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.25s;
+    z-index: 1000;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* 弹窗 */
+  .modal-mask {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    width: 80%;
+    max-width: 320px;
+  }
+  .modal h3 { font-size: 16px; margin-bottom: 14px; }
+  .modal input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+  }
+  .modal input[type="text"]:focus { border-color: #1a1a1a; }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    justify-content: flex-end;
+  }
+  .modal-actions button {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .modal-actions .btn-cancel {
+    background: #f0f0f0;
+    color: #1a1a1a;
+  }
+  .modal-actions .btn-confirm {
+    background: #1a1a1a;
+    color: #fff;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- 顶部栏（仅训练 Tab 显示子 Tab 和添加按钮） -->
+<div class="top-bar" id="topBar">
+  <div class="sub-tabs" id="subTabs">
+    <span class="sub-tab active" data-subtab="training">训练</span>
+    <span class="sub-tab" data-subtab="plan">计划</span>
+    <span class="sub-tab" data-subtab="action">动作</span>
+  </div>
+  <button class="add-btn" id="addBtn">＋</button>
+</div>
+
+<!-- 训练 Tab 视图 -->
+<div class="view active" id="viewTraining">
+  <div class="sub-view" id="subTraining" style="display:none">
+    <div class="training-summary">
+      <h3>今日训练</h3>
+      <div class="today" id="todayDate"></div>
+      <ul class="actions" id="todayActions"></ul>
+    </div>
+  </div>
+  <div class="sub-view" id="subPlan" style="display:none">
+    <div class="plan-list" id="planList"></div>
+  </div>
+  <div class="sub-view" id="subAction">
+    <!-- 二级 Tab -->
+    <div class="filter-tabs">
+      <span class="filter-tab active" data-filter="part">按部位</span>
+      <span class="filter-tab" data-filter="starred">常用</span>
+      <span class="filter-tab" data-filter="all">全部</span>
+    </div>
+    <!-- 部位选择 -->
+    <div class="part-tabs" id="partTabs"></div>
+    <!-- 动作列表 -->
+    <div class="action-list" id="actionList"></div>
+  </div>
+</div>
+
+<!-- 首页 / 日历 / 个人 Tab 视图 -->
+<div class="view" id="viewHome">
+  <div class="placeholder">
+    <div class="icon">🏠</div>
+    <h2>首页</h2>
+    <p>即将上线</p>
+  </div>
+</div>
+<div class="view" id="viewCalendar">
+  <div class="placeholder">
+    <div class="icon">📅</div>
+    <h2>日历</h2>
+    <p>即将上线</p>
+  </div>
+</div>
+<div class="view" id="viewProfile">
+  <div class="placeholder">
+    <div class="icon">👤</div>
+    <h2>个人</h2>
+    <p>即将上线</p>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<div class="bottom-nav">
+  <button class="nav-btn active" data-tab="home">
+    <span class="nav-icon">🏠</span>
+    <span>首页</span>
+  </button>
+  <button class="nav-btn" data-tab="training">
+    <span class="nav-icon">💪</span>
+    <span>训练</span>
+  </button>
+  <button class="nav-btn" data-tab="calendar">
+    <span class="nav-icon">📅</span>
+    <span>日历</span>
+  </button>
+  <button class="nav-btn" data-tab="profile">
+    <span class="nav-icon">👤</span>
+    <span>个人</span>
+  </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- 输入弹窗 -->
+<div class="modal-mask" id="inputModal">
+  <div class="modal">
+    <h3 id="modalTitle">输入</h3>
+    <input type="text" id="modalInput" placeholder="请输入...">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-confirm" onclick="confirmModal()">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 数据 ====================
+const PARTS = ['胸部', '背部', '肩部', '手臂', '臀腿', '核心', '有氧', 'HIIT'];
+
+const STORE_KEYS = {
+  actions: 'lm_actions',
+  plans: 'lm_plans',
+  tab: 'lm_main_tab',
+  subTab: 'lm_sub_tab',
+  filter: 'lm_filter',
+  part: 'lm_part',
+};
+
+function loadJson(key, def) {
+  try { return JSON.parse(localStorage.getItem(key)) || def; }
+  catch(e) { return def; }
+}
+function saveJson(key, val) {
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+let actions = loadJson(STORE_KEYS.actions, []);
+let plans = loadJson(STORE_KEYS.plans, []);
+
+let mainTab = loadJson(STORE_KEYS.tab, 'training');
+let subTab = loadJson(STORE_KEYS.subTab, 'action');
+let filter = loadJson(STORE_KEYS.filter, 'part');
+let currentPart = loadJson(STORE_KEYS.part, '胸部');
+
+// ==================== Tab 切换 ====================
+function switchTab(tab) {
+  mainTab = tab;
+  saveJson(STORE_KEYS.tab, tab);
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view' + capitalize(tab)).classList.add('active');
+  // 顶部栏仅训练 Tab 显示
+  document.getElementById('topBar').style.display = (tab === 'training') ? '' : 'none';
+}
+
+function switchSubTab(st) {
+  subTab = st;
+  saveJson(STORE_KEYS.subTab, st);
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.toggle('active', t.dataset.subtab === st));
+  document.querySelectorAll('#viewTraining .sub-view').forEach(v => v.style.display = 'none');
+  document.getElementById('sub' + capitalize(st === 'training' ? 'Training' : (st === 'plan' ? 'Plan' : 'Action'))).style.display = '';
+  renderTrainingTab();
+}
+
+// ==================== 渲染 ====================
+function renderAll() {
+  renderParts();
+  renderActions();
+  renderTrainingTab();
+  renderPlans();
+}
+
+function renderParts() {
+  const container = document.getElementById('partTabs');
+  container.innerHTML = PARTS.map(p =>
+    `<span class="part-tab ${p === currentPart ? 'active' : ''}" data-part="${p}">${p}</span>`
+  ).join('');
+  container.querySelectorAll('.part-tab').forEach(t => {
+    t.onclick = () => {
+      currentPart = t.dataset.part;
+      saveJson(STORE_KEYS.part, currentPart);
+      renderParts();
+      renderActions();
+    };
+  });
+}
+
+function renderActions() {
+  const list = document.getElementById('actionList');
+  let items;
+  if (filter === 'starred') {
+    items = actions.filter(a => a.starred);
+  } else if (filter === 'all') {
+    items = actions.slice();
+  } else {
+    items = actions.filter(a => a.part === currentPart);
+  }
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="icon">📭</div><div>暂无动作，点击右上角＋添加</div></div>`;
+    return;
+  }
+  list.innerHTML = items.map(a => {
+    const lastTrain = a.lastTrain ? `上次 ${a.lastTrain}` : '本周已练 0 天';
+    return `
+      <div class="action-card" data-id="${a.id}">
+        <span class="part-pill part-${a.part}">${a.part}</span>
+        <div class="info">
+          <div class="name">${escapeHtml(a.name)}</div>
+          <div class="sub">${lastTrain}</div>
+        </div>
+        <span class="star ${a.starred ? 'active' : ''}" data-action="star">${a.starred ? '★' : '☆'}</span>
+        <span class="del" data-action="del">✕</span>
+      </div>
+    `;
+  }).join('');
+  list.querySelectorAll('.action-card').forEach(card => {
+    const id = card.dataset.id;
+    card.querySelector('[data-action="star"]').onclick = () => {
+      const a = actions.find(x => x.id === id);
+      if (a) { a.starred = !a.starred; saveActions(); renderActions(); }
+    };
+    card.querySelector('[data-action="del"]').onclick = () => {
+      if (confirm('确认删除该动作？')) {
+        actions = actions.filter(x => x.id !== id);
+        saveActions();
+        renderActions();
+        toast('已删除');
+      }
+    };
+  });
+}
+
+function renderTrainingTab() {
+  // 今日日期
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  document.getElementById('todayDate').textContent = `${m}月${d}日`;
+
+  if (subTab === 'training') {
+    // 训练 Tab：显示今日要做哪些动作（取第一个计划的动作）
+    const today = document.getElementById('todayActions');
+    const plan = plans[0];
+    if (!plan || !plan.actionIds || plan.actionIds.length === 0) {
+      today.innerHTML = '<li style="color:#8a94a6">暂无计划，请先在「计划」中添加</li>';
+    } else {
+      const items = plan.actionIds.map(aid => actions.find(a => a.id === aid)).filter(Boolean);
+      if (items.length === 0) {
+        today.innerHTML = '<li style="color:#8a94a6">计划中的动作已全部被删除</li>';
+      } else {
+        today.innerHTML = items.map(a => `
+          <li>
+            <input type="checkbox">
+            <span class="part-pill part-${a.part}" style="padding:2px 8px;border-radius:999px;font-size:11px">${a.part}</span>
+            <span>${escapeHtml(a.name)}</span>
+          </li>
+        `).join('');
+      }
+    }
+  } else if (subTab === 'plan') {
+    // 计划 Tab
+    const container = document.getElementById('planList');
+    if (plans.length === 0) {
+      container.innerHTML = '<div class="empty"><div class="icon">📋</div><div>暂无计划，点击右上角＋添加</div></div>';
+      return;
+    }
+    container.innerHTML = plans.map(p => {
+      const count = (p.actionIds || []).length;
+      return `
+        <div class="plan-card" data-id="${p.id}">
+          <h4>${escapeHtml(p.name)}</h4>
+          <div class="meta">${count} 个动作</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// ==================== 添加按钮 ====================
+function handleAdd() {
+  if (subTab === 'action') {
+    // 动作 Tab：在当前选中部位末尾添加一个编辑行
+    const id = 'act_' + Date.now();
+    const list = document.getElementById('actionList');
+    // 临时把编辑行插入到列表底部
+    const tempCard = document.createElement('div');
+    tempCard.className = 'action-card editing';
+    tempCard.dataset.id = id;
+    tempCard.innerHTML = `
+      <span class="part-pill part-${currentPart}">${currentPart}</span>
+      <div class="info"><input type="text" placeholder="输入动作名称..." autofocus></div>
+      <span class="save-btn">保存</span>
+    `;
+    list.appendChild(tempCard);
+    const input = tempCard.querySelector('input');
+    input.focus();
+    const save = () => {
+      const name = (input.value || '').trim();
+      if (!name) { tempCard.remove(); return; }
+      actions.push({ id, part: currentPart, name, starred: false, lastTrain: null });
+      saveActions();
+      renderActions();
+      toast('已添加');
+    };
+    tempCard.querySelector('.save-btn').onclick = save;
+    input.onblur = () => setTimeout(save, 200);
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      if (e.key === 'Escape') { tempCard.remove(); }
+    };
+  } else if (subTab === 'plan') {
+    openModal('新建计划', '', (val) => {
+      if (!val) return;
+      plans.push({ id: 'plan_' + Date.now(), name: val, actionIds: [] });
+      savePlans();
+      renderTrainingTab();
+      toast('已添加');
+    });
+  } else if (subTab === 'training') {
+    toast('训练 Tab：暂无添加功能');
+  }
+}
+
+// ==================== 弹窗 ====================
+let modalCallback = null;
+function openModal(title, def, cb) {
+  document.getElementById('modalTitle').textContent = title;
+  const input = document.getElementById('modalInput');
+  input.value = def || '';
+  document.getElementById('inputModal').classList.add('show');
+  modalCallback = cb;
+  setTimeout(() => input.focus(), 50);
+}
+function closeModal() {
+  document.getElementById('inputModal').classList.remove('show');
+  modalCallback = null;
+}
+function confirmModal() {
+  const val = document.getElementById('modalInput').value.trim();
+  const cb = modalCallback;
+  closeModal();
+  if (cb) cb(val);
+}
+
+// ==================== 工具 ====================
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function saveActions() { saveJson(STORE_KEYS.actions, actions); }
+function savePlans() { saveJson(STORE_KEYS.plans, plans); }
+
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ==================== 事件绑定 ====================
+document.querySelectorAll('.nav-btn').forEach(b => {
+  b.onclick = () => switchTab(b.dataset.tab);
+});
+
+document.querySelectorAll('.sub-tab').forEach(t => {
+  t.onclick = () => switchSubTab(t.dataset.subtab);
+});
+
+document.querySelectorAll('.filter-tab').forEach(t => {
+  t.onclick = () => {
+    filter = t.dataset.filter;
+    saveJson(STORE_KEYS.filter, filter);
+    document.querySelectorAll('.filter-tab').forEach(x => x.classList.toggle('active', x === t));
+    renderActions();
+  };
+});
+
+document.getElementById('addBtn').onclick = handleAdd;
+
+// ==================== 初始化 ====================
+function init() {
+  // 恢复 Tab 状态
+  switchTab(mainTab);
+  if (mainTab === 'training') {
+    switchSubTab(subTab);
+    document.querySelectorAll('.filter-tab').forEach(x => x.classList.toggle('active', x.dataset.filter === filter));
+  }
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
