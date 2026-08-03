@@ -307,7 +307,10 @@
     padding: 16px;
     margin-bottom: 10px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    cursor: pointer;
+    transition: box-shadow 0.15s;
   }
+  .plan-card:active { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .plan-card h4 { font-size: 15px; margin-bottom: 6px; }
   .plan-card .meta { font-size: 12px; color: #8a94a6; }
 
@@ -1182,6 +1185,12 @@ function renderTrainingTab() {
         </div>
       `;
     }).join('');
+    container.querySelectorAll('.plan-card').forEach(card => {
+      card.onclick = () => {
+        const p = plans.find(x => x.id === card.dataset.id);
+        if (p) openPlanEditor(p);
+      };
+    });
   }
 }
 
@@ -1269,9 +1278,16 @@ function toast(msg) {
 // 临时状态：当前正在编辑的模版
 let editingPlan = null; // { id, name, actionIds: [] }
 
-function openPlanEditor() {
-  editingPlan = { id: 'plan_' + Date.now(), name: '', actionIds: [] };
-  document.getElementById('planNameInput').value = '';
+function openPlanEditor(existingPlan) {
+  if (existingPlan) {
+    // 编辑已有计划
+    editingPlan = { id: existingPlan.id, name: existingPlan.name, actionIds: [...(existingPlan.actionIds || [])] };
+    document.getElementById('planNameInput').value = existingPlan.name;
+  } else {
+    // 新建计划
+    editingPlan = { id: 'plan_' + Date.now(), name: '', actionIds: [] };
+    document.getElementById('planNameInput').value = '';
+  }
   renderPlanSelected();
   document.getElementById('planEditorModal').classList.add('show');
 }
