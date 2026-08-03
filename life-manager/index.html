@@ -1014,6 +1014,12 @@
     background: #d4e9c5;
     color: #2e7d32;
   }
+  .set-row .rest-circle.locked {
+    background: #f0f0f0;
+    color: #c0c4cc;
+    cursor: not-allowed;
+  }
+  .set-row .rest-circle.locked:active { transform: none; }
 </style>
 </head>
 <body>
@@ -1844,7 +1850,7 @@ function confirmPickActions() {
 let trainSession = null;
 // trainSession = {
 //   planId, planName, mainPart,
-//   actions: [{ id, name, part, expanded, sets: [{ weight, reps }] }],
+//   actions: [{ id, name, part, expanded, sets: [{ weight, reps, done }] }],
 //   running: false, elapsed: 0, timerId: null
 // }
 
@@ -1862,7 +1868,7 @@ function startTrainingWithPlan(plan) {
     actions: items.map((a, i) => ({
       id: a.id, name: a.name, part: a.part,
       expanded: i === 0, // 第一个动作默认展开
-      sets: [{ weight: '', reps: '' }] // 默认一组空数据
+      sets: [{ weight: '', reps: '', done: false }] // 默认一组空数据
     })),
     running: false, elapsed: 0, timerId: null
   };
@@ -1931,6 +1937,13 @@ function renderTrainActionBlock(a, idx) {
 }
 
 function renderSetRow(set, setIdx) {
+  // 圆圈状态：已完成显示✓，未完成显示60（是否可点由 updateRestCirclesState 控制）
+  let circleClass = 'rest-circle';
+  let circleText = '60';
+  if (set.done) {
+    circleClass += ' done';
+    circleText = '✓';
+  }
   return `
     <div class="set-row" data-set-idx="${setIdx}">
       <button class="set-add-btn" data-action="add-set">+</button>
@@ -1938,41 +1951,82 @@ function renderSetRow(set, setIdx) {
       <span class="set-unit">kg</span>
       <span class="set-x">✖️</span>
       <input type="number" class="set-input set-reps" value="${set.reps}" placeholder="00" inputmode="numeric">
-      <button class="rest-circle" data-action="rest">60</button>
+      <button class="${circleClass}" data-action="rest">${circleText}</button>
     </div>
   `;
 }
 
 function bindSetRows(block, actionIdx) {
+  const sets = trainSession.actions[actionIdx].sets;
   block.querySelectorAll('.set-row').forEach(row => {
     const setIdx = parseInt(row.dataset.setIdx, 10);
     // + 按钮：新增一排
     row.querySelector('[data-action="add-set"]').onclick = (e) => {
       e.stopPropagation();
-      trainSession.actions[actionIdx].sets.push({ weight: '', reps: '' });
+      sets.push({ weight: '', reps: '', done: false });
       // 只重渲染这个 block 的 body
       const body = block.querySelector('.ta-body');
-      body.innerHTML = trainSession.actions[actionIdx].sets.map((s, si) => renderSetRow(s, si)).join('');
+      body.innerHTML = sets.map((s, si) => renderSetRow(s, si)).join('');
       bindSetRows(block, actionIdx);
+      updateRestCirclesState(block, actionIdx);
     };
     // 重量输入
     const weightInput = row.querySelector('.set-weight');
     weightInput.oninput = (e) => {
-      trainSession.actions[actionIdx].sets[setIdx].weight = e.target.value;
+      sets[setIdx].weight = e.target.value;
     };
     weightInput.onclick = (e) => e.stopPropagation();
     // 次数输入
     const repsInput = row.querySelector('.set-reps');
     repsInput.oninput = (e) => {
-      trainSession.actions[actionIdx].sets[setIdx].reps = e.target.value;
+      sets[setIdx].reps = e.target.value;
     };
     repsInput.onclick = (e) => e.stopPropagation();
     // 休息倒计时圆圈
     const restBtn = row.querySelector('[data-action="rest"]');
     restBtn.onclick = (e) => {
       e.stopPropagation();
-      startRestCountdown(restBtn);
+      // 锁定状态不可点
+      if (restBtn.classList.contains('locked') || restBtn.classList.contains('done') || restBtn.classList.contains('counting')) return;
+      // 保存当前组的重量和次数
+      sets[setIdx].weight = weightInput.value;
+      sets[setIdx].reps = repsInput.value;
+      startRestCountdown(restBtn, () => {
+        // 倒计时完成回调：标记当前组完成，解锁下一组
+        sets[setIdx].done = true;
+        updateRestCirclesState(block, actionIdx);
+      });
     };
+  });
+  // 初始化圆圈锁定状态
+  updateRestCirclesState(block, actionIdx);
+}
+
+// 根据组的完成情况，更新所有圆圈的可点击状态
+// 规则：只有「上一个组已完成」的那个组圆圈才可点，其余锁定
+function updateRestCirclesState(block, actionIdx) {
+  const sets = trainSession.actions[actionIdx].sets;
+  const rows = block.querySelectorAll('.set-row');
+  rows.forEach((row, i) => {
+    const btn = row.querySelector('.rest-circle');
+    if (!btn) return;
+    if (sets[i].done) {
+      // 已完成：显示✓，不可再点
+      btn.classList.remove('locked', 'counting');
+      btn.classList.add('done');
+      btn.textContent = '✓';
+    } else {
+      // 未完成：判断是否解锁（上一组已完成 或 是第一组）
+      const prevDone = (i === 0) || sets[i - 1].done;
+      if (prevDone) {
+        btn.classList.remove('locked', 'done', 'counting');
+        btn.textContent = '60';
+      } else {
+        btn.classList.remove('done', 'counting');
+        btn.classList.add('locked');
+        btn.textContent = '60';
+      }
+    }
   });
 }
 
@@ -2004,12 +2058,12 @@ function toggleTrainTimer() {
   if (timerWrap) timerWrap.classList.add('show');
 }
 
-function startRestCountdown(btn) {
+function startRestCountdown(btn, onComplete) {
   // 如果已经在倒计时，不重复触发
   if (btn.classList.contains('counting')) return;
   let seconds = 60;
   btn.classList.add('counting');
-  btn.classList.remove('done');
+  btn.classList.remove('done', 'locked');
   btn.textContent = seconds;
   const tick = () => {
     seconds--;
@@ -2018,13 +2072,8 @@ function startRestCountdown(btn) {
       btn.classList.remove('counting');
       btn.classList.add('done');
       clearInterval(timer);
-      // 3秒后恢复默认显示
-      setTimeout(() => {
-        if (btn.classList.contains('done')) {
-          btn.textContent = '60';
-          btn.classList.remove('done');
-        }
-      }, 3000);
+      // 倒计时完成：保持✓，执行回调（解锁下一组）
+      if (typeof onComplete === 'function') onComplete();
     } else {
       btn.textContent = seconds;
     }
