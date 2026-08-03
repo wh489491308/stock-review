@@ -5390,7 +5390,7 @@ function parseAllBatchText(text) {
           i++;
           continue; // 跳过孤立的现价/涨跌幅项
         }
-        // 尝试匹配：股票名，现价XX，涨跌幅XX
+        // 尝试匹配：股票名，现价XX，涨跌幅XX（带前缀）
         const priceItem = items[i + 1];
         const changeItem = items[i + 2];
         if (priceItem && changeItem) {
@@ -5404,6 +5404,23 @@ function parseAllBatchText(text) {
             });
             i += 3;
             continue;
+          }
+          // 不带前缀：股票名，41.33，0.71%
+          const priceMatch2 = priceItem.match(/^([+-]?\d+(?:\.\d+)?)\s*%?$/);
+          const changeMatch2 = changeItem.match(/^([+-]?\d+(?:\.\d+)?)\s*%?$/);
+          if (priceMatch2 && changeMatch2) {
+            // 第二个是涨跌幅（带%或小数），第一个是现价（纯数字）
+            const price = parseFloat(priceMatch2[1]);
+            const change = parseFloat(changeMatch2[1]);
+            if (!isNaN(price) && !isNaN(change)) {
+              result.stocks.items.push({
+                name: item,
+                dayPrice: priceMatch2[1],
+                change: change
+              });
+              i += 3;
+              continue;
+            }
           }
         }
         // 无法识别
