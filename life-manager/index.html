@@ -71,37 +71,18 @@
   }
   .add-btn:active { background: #e0e0e0; }
 
-  /* 二级 Tab（按部位/常用/全部，仅动作 Tab 显示） */
-  .filter-tabs {
-    display: flex;
-    gap: 8px;
-    padding: 12px 16px;
-    background: #fff;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  .filter-tab {
-    padding: 6px 16px;
-    border-radius: 999px;
-    background: #f0f0f0;
-    color: #1a1a1a;
-    font-size: 13px;
-    cursor: pointer;
-    user-select: none;
-  }
-  .filter-tab.active {
-    background: #1a1a1a;
-    color: #fff;
-    font-weight: 600;
-  }
-
-  /* 部位选择 */
+  /* 部位选择（单行横向滑动） */
   .part-tabs {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     padding: 12px 16px;
     background: #fff;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .part-tabs::-webkit-scrollbar { display: none; }
   .part-tab {
     padding: 6px 16px;
     border-radius: 999px;
@@ -394,12 +375,6 @@
     <div class="plan-list" id="planList"></div>
   </div>
   <div class="sub-view" id="subAction">
-    <!-- 二级 Tab -->
-    <div class="filter-tabs">
-      <span class="filter-tab active" data-filter="part">按部位</span>
-      <span class="filter-tab" data-filter="starred">常用</span>
-      <span class="filter-tab" data-filter="all">全部</span>
-    </div>
     <!-- 部位选择 -->
     <div class="part-tabs" id="partTabs"></div>
     <!-- 动作列表 -->
@@ -474,7 +449,6 @@ const STORE_KEYS = {
   plans: 'lm_plans',
   tab: 'lm_main_tab',
   subTab: 'lm_sub_tab',
-  filter: 'lm_filter',
   part: 'lm_part',
 };
 
@@ -491,7 +465,6 @@ let plans = loadJson(STORE_KEYS.plans, []);
 
 let mainTab = loadJson(STORE_KEYS.tab, 'training');
 let subTab = loadJson(STORE_KEYS.subTab, 'action');
-let filter = loadJson(STORE_KEYS.filter, 'part');
 let currentPart = loadJson(STORE_KEYS.part, '胸部');
 
 // ==================== Tab 切换 ====================
@@ -539,14 +512,7 @@ function renderParts() {
 
 function renderActions() {
   const list = document.getElementById('actionList');
-  let items;
-  if (filter === 'starred') {
-    items = actions.filter(a => a.starred);
-  } else if (filter === 'all') {
-    items = actions.slice();
-  } else {
-    items = actions.filter(a => a.part === currentPart);
-  }
+  const items = actions.filter(a => a.part === currentPart);
   if (items.length === 0) {
     list.innerHTML = `<div class="empty"><div class="icon">📭</div><div>暂无动作，点击右上角＋添加</div></div>`;
     return;
@@ -723,15 +689,6 @@ document.querySelectorAll('.sub-tab').forEach(t => {
   t.onclick = () => switchSubTab(t.dataset.subtab);
 });
 
-document.querySelectorAll('.filter-tab').forEach(t => {
-  t.onclick = () => {
-    filter = t.dataset.filter;
-    saveJson(STORE_KEYS.filter, filter);
-    document.querySelectorAll('.filter-tab').forEach(x => x.classList.toggle('active', x === t));
-    renderActions();
-  };
-});
-
 document.getElementById('addBtn').onclick = handleAdd;
 
 // ==================== 初始化 ====================
@@ -740,7 +697,6 @@ function init() {
   switchTab(mainTab);
   if (mainTab === 'training') {
     switchSubTab(subTab);
-    document.querySelectorAll('.filter-tab').forEach(x => x.classList.toggle('active', x.dataset.filter === filter));
   }
   renderAll();
 }
