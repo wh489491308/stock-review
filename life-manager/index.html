@@ -850,22 +850,10 @@
   }
   .train-header .train-start-btn:active { background: #c5dab5; }
   .train-header .train-start-btn.running {
-    background: #ffe4d6;
-    color: #e65100;
-  }
-  .train-header .train-finish-btn {
-    flex-shrink: 0;
-    padding: 8px 18px;
-    border-radius: 999px;
     background: #1a1a1a;
     color: #fff;
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
   }
-  .train-header .train-finish-btn:active { background: #333; }
+  .train-header .train-start-btn.running:active { background: #333; }
   .train-timer-wrap {
     display: none;
     align-items: center;
@@ -883,6 +871,11 @@
     color: #1a1a1a;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .train-timer-wrap.paused .timer-display {
+    color: #e65100;
   }
 
   /* 动作区块 */
@@ -1903,33 +1896,39 @@ function renderTrainSession() {
     return;
   }
 
-  // 顶部：标题 + 开始/结束 + 计时器
+  // 顶部：标题 + 计时器 + 开始/结束按钮（单按钮）
   const mainPartText = trainSession.mainPart ? '<span class="sep">——</span>' + escapeHtml(trainSession.mainPart) : '';
-  const btnText = trainSession.running ? '暂停' : '开始';
-  const btnClass = 'train-start-btn' + (trainSession.running ? ' running' : '');
+  // 按钮状态：未开始显示"开始"，计时中显示"结束"
+  const started = trainSession.elapsed > 0 || trainSession.running;
+  const btnText = started ? '结束' : '开始';
+  const btnClass = 'train-start-btn' + (started ? ' running' : '');
   const timerDisplay = formatTime(trainSession.elapsed);
+  const paused = started && !trainSession.running;
 
   container.innerHTML = `
     <div class="train-header">
       <div class="session-title">${escapeHtml(trainSession.planName)}${mainPartText}</div>
-      <div class="train-timer-wrap ${trainSession.running || trainSession.elapsed > 0 ? 'show' : ''}">
+      <div class="train-timer-wrap ${started ? 'show' : ''} ${paused ? 'paused' : ''}">
         <span class="timer-label">训练时长</span>
         <span class="timer-display" id="trainTimerDisplay">${timerDisplay}</span>
       </div>
       <button class="${btnClass}" id="trainStartBtn">${btnText}</button>
-      <button class="train-finish-btn" id="trainFinishBtn">结束</button>
     </div>
     <div class="train-actions" id="trainActions">
       ${trainSession.actions.map((a, i) => renderTrainActionBlock(a, i)).join('')}
     </div>
   `;
 
-  // 绑定开始/暂停按钮
+  // 绑定按钮：未开始→开始计时，已开始→结束保存（每次点击实时判断）
   const startBtn = document.getElementById('trainStartBtn');
-  if (startBtn) startBtn.onclick = toggleTrainTimer;
-  // 绑定结束按钮
-  const finishBtn = document.getElementById('trainFinishBtn');
-  if (finishBtn) finishBtn.onclick = finishTraining;
+  if (startBtn) startBtn.onclick = () => {
+    const started = trainSession.elapsed > 0 || trainSession.running;
+    if (started) finishTraining();
+    else toggleTrainTimer();
+  };
+  // 绑定计时器点击：暂停/继续
+  const timerDisplayEl = document.getElementById('trainTimerDisplay');
+  if (timerDisplayEl) timerDisplayEl.onclick = toggleTrainTimer;
 
   // 绑定动作区块
   container.querySelectorAll('.train-action-block').forEach(block => {
@@ -2072,14 +2071,19 @@ function toggleTrainTimer() {
       if (display) display.textContent = formatTime(trainSession.elapsed);
     }, 1000);
   }
-  // 更新开始/暂停按钮显示
+  // 更新计时器区域样式（暂停时加 .paused 标记）
+  const timerWrap = document.querySelector('.train-timer-wrap');
+  if (timerWrap) {
+    timerWrap.classList.add('show');
+    timerWrap.classList.toggle('paused', !trainSession.running);
+  }
+  // 更新按钮：一旦开始过（elapsed>0 或 running），按钮显示"结束"
   const btn = document.getElementById('trainStartBtn');
   if (btn) {
-    btn.textContent = trainSession.running ? '暂停' : '开始';
-    btn.classList.toggle('running', trainSession.running);
+    const started = trainSession.elapsed > 0 || trainSession.running;
+    btn.textContent = started ? '结束' : '开始';
+    btn.classList.toggle('running', started);
   }
-  const timerWrap = document.querySelector('.train-timer-wrap');
-  if (timerWrap) timerWrap.classList.add('show');
 }
 
 // 结束训练：保存数据到动作历史记录
