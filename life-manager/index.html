@@ -784,6 +784,236 @@
     font-size: 11px;
     color: #8a94a6;
   }
+
+  /* 计划卡片：开练按钮 */
+  .plan-card .start-train-btn {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    align-self: center;
+    line-height: 1.2;
+  }
+  .plan-card .start-train-btn:active { background: #333; }
+
+  /* ==================== 训练栏 ==================== */
+  .train-session {
+    margin: 16px;
+  }
+  .train-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 12px;
+  }
+  .train-header .session-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .train-header .session-title .sep {
+    color: #8a94a6;
+    font-weight: 400;
+    margin: 0 2px;
+  }
+  .train-header .train-start-btn {
+    flex-shrink: 0;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: #d4e9c5;
+    color: #1a1a1a;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .train-header .train-start-btn:active { background: #c5dab5; }
+  .train-header .train-start-btn.running {
+    background: #ffe4d6;
+    color: #e65100;
+  }
+  .train-timer-wrap {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .train-timer-wrap.show { display: flex; }
+  .train-timer-wrap .timer-label {
+    font-size: 12px;
+    color: #8a94a6;
+  }
+  .train-timer-wrap .timer-display {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+  }
+
+  /* 动作区块 */
+  .train-action-block {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .train-action-block .ta-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .train-action-block .ta-header .ta-index {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #8a94a6;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .train-action-block.expanded .ta-header .ta-index {
+    background: #1a1a1a;
+    color: #fff;
+  }
+  .train-action-block .ta-header .ta-name {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    min-width: 0;
+  }
+  .train-action-block .ta-header .ta-part {
+    flex-shrink: 0;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .train-action-block .ta-header .ta-arrow {
+    flex-shrink: 0;
+    color: #c0c4cc;
+    font-size: 14px;
+    transition: transform 0.2s;
+  }
+  .train-action-block.expanded .ta-header .ta-arrow {
+    transform: rotate(90deg);
+  }
+  .train-action-block .ta-body {
+    display: none;
+    padding: 0 16px 14px;
+  }
+  .train-action-block.expanded .ta-body {
+    display: block;
+  }
+
+  /* 组行 */
+  .set-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    border-top: 1px solid #f5f5f5;
+    flex-wrap: nowrap;
+  }
+  .set-row .set-add-btn {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    border: none;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    font-family: inherit;
+  }
+  .set-row .set-add-btn:active { background: #e0e0e0; }
+  .set-row .set-input {
+    width: 44px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 6px 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    background: #fff;
+    outline: none;
+    font-family: inherit;
+    -moz-appearance: textfield;
+  }
+  .set-row .set-input::-webkit-outer-spin-button,
+  .set-row .set-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .set-row .set-input:focus { border-color: #1a1a1a; }
+  .set-row .set-unit {
+    font-size: 13px;
+    color: #8a94a6;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .set-row .set-x {
+    font-size: 15px;
+    color: #8a94a6;
+    flex-shrink: 0;
+  }
+  .set-row .rest-circle {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    margin-left: auto;
+    transition: background 0.2s, color 0.2s;
+  }
+  .set-row .rest-circle:active { transform: scale(0.95); }
+  .set-row .rest-circle.counting {
+    background: #1a1a1a;
+    color: #fff;
+  }
+  .set-row .rest-circle.done {
+    background: #d4e9c5;
+    color: #2e7d32;
+  }
 </style>
 </head>
 <body>
@@ -803,11 +1033,7 @@
 <!-- 训练 Tab 视图 -->
 <div class="view active" id="viewTraining">
   <div class="sub-view" id="subTraining" style="display:none">
-    <div class="training-summary">
-      <h3>今日训练</h3>
-      <div class="today" id="todayDate"></div>
-      <ul class="actions" id="todayActions"></ul>
-    </div>
+    <div class="train-session" id="trainSession"></div>
   </div>
   <div class="sub-view" id="subPlan" style="display:none">
     <div class="plan-list" id="planList"></div>
@@ -1296,32 +1522,8 @@ function syncPlanOrderFromDOM() {
 }
 
 function renderTrainingTab() {
-  // 今日日期
-  const now = new Date();
-  const m = now.getMonth() + 1;
-  const d = now.getDate();
-  document.getElementById('todayDate').textContent = `${m}月${d}日`;
-
   if (subTab === 'training') {
-    // 训练 Tab：显示今日要做哪些动作（取第一个计划的动作）
-    const today = document.getElementById('todayActions');
-    const plan = plans[0];
-    if (!plan || !plan.actionIds || plan.actionIds.length === 0) {
-      today.innerHTML = '<li style="color:#8a94a6">暂无计划，请先在「计划」中添加</li>';
-    } else {
-      const items = plan.actionIds.map(aid => actions.find(a => a.id === aid)).filter(Boolean);
-      if (items.length === 0) {
-        today.innerHTML = '<li style="color:#8a94a6">计划中的动作已全部被删除</li>';
-      } else {
-        today.innerHTML = items.map(a => `
-          <li>
-            <input type="checkbox">
-            <span class="part-pill part-${a.part}" style="padding:2px 8px;border-radius:999px;font-size:11px">${a.part}</span>
-            <span>${escapeHtml(a.name)}</span>
-          </li>
-        `).join('');
-      }
-    }
+    renderTrainSession();
   } else if (subTab === 'plan') {
     // 计划 Tab
     const container = document.getElementById('planList');
@@ -1348,6 +1550,7 @@ function renderTrainingTab() {
               ${more > 0 ? `<span class="more">+${more}</span>` : ''}
             </div>
           </div>
+          <button class="start-train-btn" data-action="start-train">开练</button>
           <span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>
         </div>
       `;
@@ -1359,6 +1562,15 @@ function renderTrainingTab() {
         const p = plans.find(x => x.id === id);
         if (p) openPlanEditor(p);
       };
+      // 开练按钮
+      const startBtn = card.querySelector('[data-action="start-train"]');
+      if (startBtn) {
+        startBtn.onclick = (e) => {
+          e.stopPropagation();
+          const p = plans.find(x => x.id === id);
+          if (p) startTrainingWithPlan(p);
+        };
+      }
       // 拖拽手柄
       initPlanDragHandle(card, card.querySelector('[data-action="drag"]'));
     });
@@ -1625,6 +1837,206 @@ function confirmPickActions() {
   editingPlan.actionIds = Array.from(pickerSelected);
   closeActionPicker();
   renderPlanSelected();
+}
+
+// ==================== 训练会话 ====================
+// 当前训练会话状态
+let trainSession = null;
+// trainSession = {
+//   planId, planName, mainPart,
+//   actions: [{ id, name, part, expanded, sets: [{ weight, reps }] }],
+//   running: false, elapsed: 0, timerId: null
+// }
+
+function startTrainingWithPlan(plan) {
+  // 如果有正在进行的计时器，先停掉
+  if (trainSession && trainSession.timerId) {
+    clearInterval(trainSession.timerId);
+    trainSession.timerId = null;
+  }
+  const items = (plan.actionIds || []).map(aid => actions.find(a => a.id === aid)).filter(Boolean);
+  trainSession = {
+    planId: plan.id,
+    planName: plan.name,
+    mainPart: plan.mainPart || '',
+    actions: items.map((a, i) => ({
+      id: a.id, name: a.name, part: a.part,
+      expanded: i === 0, // 第一个动作默认展开
+      sets: [{ weight: '', reps: '' }] // 默认一组空数据
+    })),
+    running: false, elapsed: 0, timerId: null
+  };
+  // 切到训练子 Tab
+  switchSubTab('training');
+}
+
+function renderTrainSession() {
+  const container = document.getElementById('trainSession');
+  if (!trainSession) {
+    container.innerHTML = '<div class="empty"><div class="icon">💪</div><div>请在「计划」中点击「开练」开始训练</div></div>';
+    return;
+  }
+
+  // 顶部：标题 + 开始/暂停 + 计时器
+  const mainPartText = trainSession.mainPart ? '<span class="sep">——</span>' + escapeHtml(trainSession.mainPart) : '';
+  const btnText = trainSession.running ? '暂停' : '开始';
+  const btnClass = 'train-start-btn' + (trainSession.running ? ' running' : '');
+  const timerDisplay = formatTime(trainSession.elapsed);
+
+  container.innerHTML = `
+    <div class="train-header">
+      <div class="session-title">${escapeHtml(trainSession.planName)}${mainPartText}</div>
+      <div class="train-timer-wrap ${trainSession.running || trainSession.elapsed > 0 ? 'show' : ''}">
+        <span class="timer-label">训练时长</span>
+        <span class="timer-display" id="trainTimerDisplay">${timerDisplay}</span>
+      </div>
+      <button class="${btnClass}" id="trainStartBtn">${btnText}</button>
+    </div>
+    <div class="train-actions" id="trainActions">
+      ${trainSession.actions.map((a, i) => renderTrainActionBlock(a, i)).join('')}
+    </div>
+  `;
+
+  // 绑定开始/暂停按钮
+  const startBtn = document.getElementById('trainStartBtn');
+  if (startBtn) startBtn.onclick = toggleTrainTimer;
+
+  // 绑定动作区块
+  container.querySelectorAll('.train-action-block').forEach(block => {
+    const idx = parseInt(block.dataset.idx, 10);
+    // 点击头部展开/收起
+    block.querySelector('.ta-header').onclick = () => {
+      trainSession.actions[idx].expanded = !trainSession.actions[idx].expanded;
+      block.classList.toggle('expanded');
+    };
+    // 绑定组行
+    bindSetRows(block, idx);
+  });
+}
+
+function renderTrainActionBlock(a, idx) {
+  return `
+    <div class="train-action-block ${a.expanded ? 'expanded' : ''}" data-idx="${idx}">
+      <div class="ta-header">
+        <span class="ta-index">${idx + 1}</span>
+        <span class="ta-name">${escapeHtml(a.name)}</span>
+        <span class="ta-part part-pill part-${a.part}">${a.part}</span>
+        <span class="ta-arrow">›</span>
+      </div>
+      <div class="ta-body">
+        ${a.sets.map((s, si) => renderSetRow(s, si)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderSetRow(set, setIdx) {
+  return `
+    <div class="set-row" data-set-idx="${setIdx}">
+      <button class="set-add-btn" data-action="add-set">+</button>
+      <input type="number" class="set-input set-weight" value="${set.weight}" placeholder="00" inputmode="numeric">
+      <span class="set-unit">kg</span>
+      <span class="set-x">✖️</span>
+      <input type="number" class="set-input set-reps" value="${set.reps}" placeholder="00" inputmode="numeric">
+      <button class="rest-circle" data-action="rest">60</button>
+    </div>
+  `;
+}
+
+function bindSetRows(block, actionIdx) {
+  block.querySelectorAll('.set-row').forEach(row => {
+    const setIdx = parseInt(row.dataset.setIdx, 10);
+    // + 按钮：新增一排
+    row.querySelector('[data-action="add-set"]').onclick = (e) => {
+      e.stopPropagation();
+      trainSession.actions[actionIdx].sets.push({ weight: '', reps: '' });
+      // 只重渲染这个 block 的 body
+      const body = block.querySelector('.ta-body');
+      body.innerHTML = trainSession.actions[actionIdx].sets.map((s, si) => renderSetRow(s, si)).join('');
+      bindSetRows(block, actionIdx);
+    };
+    // 重量输入
+    const weightInput = row.querySelector('.set-weight');
+    weightInput.oninput = (e) => {
+      trainSession.actions[actionIdx].sets[setIdx].weight = e.target.value;
+    };
+    weightInput.onclick = (e) => e.stopPropagation();
+    // 次数输入
+    const repsInput = row.querySelector('.set-reps');
+    repsInput.oninput = (e) => {
+      trainSession.actions[actionIdx].sets[setIdx].reps = e.target.value;
+    };
+    repsInput.onclick = (e) => e.stopPropagation();
+    // 休息倒计时圆圈
+    const restBtn = row.querySelector('[data-action="rest"]');
+    restBtn.onclick = (e) => {
+      e.stopPropagation();
+      startRestCountdown(restBtn);
+    };
+  });
+}
+
+function toggleTrainTimer() {
+  if (!trainSession) return;
+  if (trainSession.running) {
+    // 暂停
+    trainSession.running = false;
+    if (trainSession.timerId) {
+      clearInterval(trainSession.timerId);
+      trainSession.timerId = null;
+    }
+  } else {
+    // 开始
+    trainSession.running = true;
+    trainSession.timerId = setInterval(() => {
+      trainSession.elapsed++;
+      const display = document.getElementById('trainTimerDisplay');
+      if (display) display.textContent = formatTime(trainSession.elapsed);
+    }, 1000);
+  }
+  // 更新按钮显示
+  const btn = document.getElementById('trainStartBtn');
+  if (btn) {
+    btn.textContent = trainSession.running ? '暂停' : '开始';
+    btn.classList.toggle('running', trainSession.running);
+  }
+  const timerWrap = document.querySelector('.train-timer-wrap');
+  if (timerWrap) timerWrap.classList.add('show');
+}
+
+function startRestCountdown(btn) {
+  // 如果已经在倒计时，不重复触发
+  if (btn.classList.contains('counting')) return;
+  let seconds = 60;
+  btn.classList.add('counting');
+  btn.classList.remove('done');
+  btn.textContent = seconds;
+  const tick = () => {
+    seconds--;
+    if (seconds <= 0) {
+      btn.textContent = '✓';
+      btn.classList.remove('counting');
+      btn.classList.add('done');
+      clearInterval(timer);
+      // 3秒后恢复默认显示
+      setTimeout(() => {
+        if (btn.classList.contains('done')) {
+          btn.textContent = '60';
+          btn.classList.remove('done');
+        }
+      }, 3000);
+    } else {
+      btn.textContent = seconds;
+    }
+  };
+  const timer = setInterval(tick, 1000);
+}
+
+function formatTime(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return [h, m, s].map(x => String(x).padStart(2, '0')).join(':');
 }
 
 // ==================== 事件绑定 ====================
