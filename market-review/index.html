@@ -3714,7 +3714,13 @@ function updateAllPlanRates(stockIdx) {
 }
 
 /* 通用：将元素滚动到视口可见区域（考虑键盘弹出 & 第三方输入法） */
+// 全局计时器：每次调用 scrollToVisible 时取消上一次的待执行滚动，防止叠加抖动
+let __scrollPendingTimers = [];
 function scrollToVisible(el) {
+  // 取消上一次的所有待执行滚动
+  __scrollPendingTimers.forEach(t => clearTimeout(t));
+  __scrollPendingTimers = [];
+
   function doScroll() {
     if (!document.body.contains(el)) return;
     const vv = window.visualViewport;
@@ -3727,18 +3733,14 @@ function scrollToVisible(el) {
     const targetTop = vTop + vh * 0.35;
     const offset = rect.top - targetTop;
     if (Math.abs(offset) > 10) {
-      // 使用 instant 避免多次调用时 smooth 动画叠加导致滚动过量
-      window.scrollBy(0, offset);
+      // 使用绝对位置 scrollTo 而非相对 scrollBy，避免多次调用叠加
+      window.scrollTo(0, window.scrollY + offset);
     }
   }
-  // 多次尝试：先等 DOM 布局，再等键盘弹起（第三方输入法弹出较慢，多试几次）
+  // 仅两次尝试：一次在 DOM 布局后，一次在键盘弹起后
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      doScroll();
-      setTimeout(doScroll, 150);
-      setTimeout(doScroll, 350);
-      setTimeout(doScroll, 600);
-    });
+    doScroll();
+    __scrollPendingTimers.push(setTimeout(doScroll, 300));
   });
 }
 
@@ -5688,33 +5690,48 @@ window.addEventListener('resize', () => {
 // === 第三方输入法键盘弹出时，保持输入框在屏幕中间最佳输入区域 ===
 // 记录当前聚焦的持仓模块输入元素
 let __focusedPlanInput = null;
+// 防抖计时器：确保同一时间只有一次滚动调整在等待执行
+let __focusScrollTimer = null;
+let __vvResizeTimer = null;
 
-// 事件委托：监听持仓模块内输入框的 focus（focusin 会冒泡，适合动态生成的元素）
+// 选择器：持仓模块内所有可能触发键盘的输入框
+const __planInputSelector = '.sp-target-input, .sp-sell-input, .stock-dayprice-input, .stock-name-input, .stock-data-input';
+
+// 事件委托：监听输入框聚焦（focusin 会冒泡，适合动态生成的元素）
 document.addEventListener('focusin', (e) => {
   const el = e.target;
-  if (el.matches && el.matches('.sp-target-input, .sp-sell-input, .stock-dayprice-input, .stock-name-input, .stock-data-input')) {
+  if (el.matches && el.matches(__planInputSelector)) {
     __focusedPlanInput = el;
-    scrollToVisible(el);
+    // 不立即滚动——先让浏览器完成原生 focus 滚动，延迟后再调整到最佳位置
+    clearTimeout(__focusScrollTimer);
+    __focusScrollTimer = setTimeout(() => {
+      scrollToVisible(el);
+    }, 200);
   }
 });
 // blur 时延迟清除引用（延迟是为了避免 focusout → focusin 之间的间隙误清）
 document.addEventListener('focusout', () => {
   setTimeout(() => {
     const ae = document.activeElement;
-    if (!ae || !ae.matches || !ae.matches('.sp-target-input, .sp-sell-input, .stock-dayprice-input, .stock-name-input, .stock-data-input')) {
+    if (!ae || !ae.matches || !ae.matches(__planInputSelector)) {
       __focusedPlanInput = null;
+      clearTimeout(__focusScrollTimer);
+      clearTimeout(__vvResizeTimer);
     }
   }, 150);
 });
 
 // visualViewport 变化（键盘弹起/收起）时，重新滚动聚焦的输入框到最佳位置
-// 这是解决第三方输入法问题的关键：visualViewport.resize 在键盘弹出时可靠触发，
-// 比 window.resize 更准确（window.resize 在某些第三方输入法下不触发）
+// 关键：必须防抖，键盘弹出动画过程中 resize 会连续触发多次，
+// 不防抖会导致多次 scrollToVisible 叠加产生抖动
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => {
-    if (__focusedPlanInput && document.body.contains(__focusedPlanInput)) {
+    if (!__focusedPlanInput || !document.body.contains(__focusedPlanInput)) return;
+    // 防抖 200ms：等键盘动画稳定后再做一次调整
+    clearTimeout(__vvResizeTimer);
+    __vvResizeTimer = setTimeout(() => {
       scrollToVisible(__focusedPlanInput);
-    }
+    }, 200);
   });
 }
 
