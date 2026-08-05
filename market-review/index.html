@@ -3713,26 +3713,15 @@ function updateAllPlanRates(stockIdx) {
   });
 }
 
-/* 通用：将元素滚动到视口可见区域（考虑键盘弹出）
-   只做一次滚动，不重试。使用 smooth 行为让移动丝滑。
-   注意：scrollTo 改变滚动位置，不改变视口大小，不会触发 visualViewport.resize，
-   因此不存在反馈循环。 */
+/* 通用：将元素滚动到视口中央
+   使用浏览器原生 scrollIntoView API，而非手动 scrollTo。
+   原因：scrollIntoView 是浏览器自身的滚动机制，不会被浏览器的
+   focus/keyboard 布局调整所覆盖。手动 scrollTo({behavior:'smooth'})
+   会被浏览器后续的即时滚动中断，导致"闪回"。
+   block:'center' 将元素定位到可见视口中央（键盘上方），即时滚动不可中断。 */
 function scrollToVisible(el) {
-  requestAnimationFrame(() => {
-    if (!document.body.contains(el)) return;
-    const vv = window.visualViewport;
-    const vh = vv ? vv.height : window.innerHeight;
-    const vTop = vv ? vv.offsetTop : 0;
-    const rect = el.getBoundingClientRect();
-    // 元素已在可视范围内则不滚动
-    if (rect.top > vTop + 20 && rect.bottom < vTop + vh - 20) return;
-    // 将元素顶部放在可见区域 35% 处（键盘上方的最佳输入区域）
-    const targetTop = vTop + vh * 0.35;
-    const offset = rect.top - targetTop;
-    if (Math.abs(offset) > 10) {
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-    }
-  });
+  if (!document.body.contains(el)) return;
+  el.scrollIntoView({ block: 'center', inline: 'nearest' });
 }
 
 /* 涨跌幅数据：点击 ✎ 进入编辑，blur 保存并切回显示 */
@@ -5678,48 +5667,46 @@ window.addEventListener('resize', () => {
   }
 });
 
-// === 输入框聚焦时，随键盘弹出丝滑滚动到可见区域 ===
-// 原理：visualViewport.resize 在键盘弹出/收起时可靠触发（比固定延迟更准确）。
-// scrollTo 只改变滚动位置不改变视口大小，不会触发 resize，因此无反馈循环。
-// 防抖 200ms 等键盘动画稳定后做一次 smooth 滚动，丝滑且不抖动。
-// stock-data-input 由 editStockData() 用 preventScroll:true 直接处理，不在此列。
+// === 输入框聚焦时，随键盘弹出滚动到可见区域 ===
+// 使用 visualViewport.resize 检测键盘弹出，防抖 300ms 等键盘动画完全停止后，
+// 调用 scrollIntoView({block:'center'}) 做一次即时滚动。
+// 关键：用浏览器原生 scrollIntoView 而非手动 scrollTo，浏览器不会覆盖自身的滚动。
+// 即时滚动（非 smooth）不会被浏览器后续的布局调整中断，不会"闪回"。
 const __planInputSelector = '.sp-target-input, .sp-sell-input, .stock-dayprice-input, .stock-name-input';
 let __focusedInput = null;
 let __vvDebounce = null;
-let __focusFallback = null;
 
 document.addEventListener('focusin', (e) => {
   const el = e.target;
   if (!el.matches || !el.matches(__planInputSelector)) return;
   __focusedInput = el;
-  // 兜底：如果 visualViewport.resize 没触发（桌面端或极慢键盘），500ms 后仍滚一次
-  clearTimeout(__focusFallback);
-  __focusFallback = setTimeout(() => scrollToVisible(el), 500);
+  // 兜底：如果 visualViewport.resize 没触发（桌面端无键盘），500ms 后滚一次
+  clearTimeout(__vvDebounce);
+  __vvDebounce = setTimeout(() => {
+    if (document.activeElement === el) el.scrollIntoView({ block: 'center', inline: 'nearest' });
+  }, 500);
 });
 
 document.addEventListener('focusout', () => {
-  // 延迟清除，避免 focusout→focusin 切换间隙误清
   setTimeout(() => {
     const ae = document.activeElement;
     if (!ae || !ae.matches || !ae.matches(__planInputSelector)) {
       __focusedInput = null;
       clearTimeout(__vvDebounce);
-      clearTimeout(__focusFallback);
     }
   }, 200);
 });
 
-// 键盘弹出/收起 → visualViewport 尺寸变化 → 防抖后做一次 smooth 滚动
+// 键盘弹出/收起 → visualViewport.resize → 防抖 300ms 等动画稳定 → 一次即时滚动
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => {
     if (!__focusedInput || !document.body.contains(__focusedInput)) return;
-    clearTimeout(__focusFallback); // resize 已触发，不需要兜底了
     clearTimeout(__vvDebounce);
     __vvDebounce = setTimeout(() => {
       if (__focusedInput && document.body.contains(__focusedInput)) {
-        scrollToVisible(__focusedInput);
+        __focusedInput.scrollIntoView({ block: 'center', inline: 'nearest' });
       }
-    }, 200);
+    }, 300);
   });
 }
 
