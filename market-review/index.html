@@ -3714,9 +3714,9 @@ function updateAllPlanRates(stockIdx) {
 }
 
 /* 通用：将元素滚动到视口可见区域（考虑键盘弹出）
-   设计原则：只做一次滚动，不重试、不监听 visualViewport.resize，
-   避免滚动→resize→滚动的反馈循环导致抖动。
-   分析文本框等使用 preventScroll:true + 本函数，工作正常。 */
+   只做一次滚动，不重试。使用 smooth 行为让移动丝滑。
+   注意：scrollTo 改变滚动位置，不改变视口大小，不会触发 visualViewport.resize，
+   因此不存在反馈循环。 */
 function scrollToVisible(el) {
   requestAnimationFrame(() => {
     if (!document.body.contains(el)) return;
@@ -3730,7 +3730,7 @@ function scrollToVisible(el) {
     const targetTop = vTop + vh * 0.35;
     const offset = rect.top - targetTop;
     if (Math.abs(offset) > 10) {
-      window.scrollTo(0, window.scrollY + offset);
+      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
     }
   });
 }
@@ -5678,21 +5678,50 @@ window.addEventListener('resize', () => {
   }
 });
 
-// === 输入框聚焦时滚动到可见区域 ===
-// 持仓模块中始终在 DOM 中的输入框（用户直接点击聚焦），
-// 浏览器原生滚动在第三方输入法下可能不够，延迟做一次调整。
-// 注意：不监听 visualViewport.resize —— 那会制造 scrollTo→resize→scrollTo 的反馈循环导致抖动。
-// stock-data-input 由 editStockData() 用 preventScroll:true + scrollToVisible 直接处理，不在此列。
+// === 输入框聚焦时，随键盘弹出丝滑滚动到可见区域 ===
+// 原理：visualViewport.resize 在键盘弹出/收起时可靠触发（比固定延迟更准确）。
+// scrollTo 只改变滚动位置不改变视口大小，不会触发 resize，因此无反馈循环。
+// 防抖 200ms 等键盘动画稳定后做一次 smooth 滚动，丝滑且不抖动。
+// stock-data-input 由 editStockData() 用 preventScroll:true 直接处理，不在此列。
 const __planInputSelector = '.sp-target-input, .sp-sell-input, .stock-dayprice-input, .stock-name-input';
+let __focusedInput = null;
+let __vvDebounce = null;
+let __focusFallback = null;
+
 document.addEventListener('focusin', (e) => {
   const el = e.target;
-  if (el.matches && el.matches(__planInputSelector)) {
-    // 延迟 350ms：等浏览器原生滚动和键盘弹出动画基本结束后再做一次调整
-    setTimeout(() => {
-      if (document.activeElement === el) scrollToVisible(el);
-    }, 350);
-  }
+  if (!el.matches || !el.matches(__planInputSelector)) return;
+  __focusedInput = el;
+  // 兜底：如果 visualViewport.resize 没触发（桌面端或极慢键盘），500ms 后仍滚一次
+  clearTimeout(__focusFallback);
+  __focusFallback = setTimeout(() => scrollToVisible(el), 500);
 });
+
+document.addEventListener('focusout', () => {
+  // 延迟清除，避免 focusout→focusin 切换间隙误清
+  setTimeout(() => {
+    const ae = document.activeElement;
+    if (!ae || !ae.matches || !ae.matches(__planInputSelector)) {
+      __focusedInput = null;
+      clearTimeout(__vvDebounce);
+      clearTimeout(__focusFallback);
+    }
+  }, 200);
+});
+
+// 键盘弹出/收起 → visualViewport 尺寸变化 → 防抖后做一次 smooth 滚动
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (!__focusedInput || !document.body.contains(__focusedInput)) return;
+    clearTimeout(__focusFallback); // resize 已触发，不需要兜底了
+    clearTimeout(__vvDebounce);
+    __vvDebounce = setTimeout(() => {
+      if (__focusedInput && document.body.contains(__focusedInput)) {
+        scrollToVisible(__focusedInput);
+      }
+    }, 200);
+  });
+}
 
 // 点击空白取消选中
 document.addEventListener('click', (e) => {
