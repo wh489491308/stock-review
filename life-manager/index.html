@@ -8456,7 +8456,10 @@ function closeFinishModal() {
   if (trainSession && !trainSession.running) {
     trainSession.running = true;
     trainSession.startTime = Date.now();
+    // 用闭包变量跟踪 session 身份，避免 session 被替换后旧定时器还在改 DOM
+    const captured = trainSession;
     trainSession.timerId = setInterval(() => {
+      if (trainSession !== captured) { clearInterval(captured.timerId); return; }
       const elapsed = getSessionElapsed();
       const btn = document.getElementById('trainStartBtn');
       if (btn) btn.textContent = formatTime(elapsed);
