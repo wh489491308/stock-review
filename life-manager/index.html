@@ -816,6 +816,7 @@
     justify-content: space-between;
     padding: 8px 8px 2px;
     background: #fff;
+    border: 1px solid #ddd;
     border-radius: 12px;
     margin-bottom: 8px;
     margin-top: 3px;
@@ -1772,9 +1773,10 @@
 
   /* 日历页面（内嵌，非弹窗） */
   .cal-page {
-    padding: 0 0 80px;
+    padding: 0;
     position: relative;
-    min-height: calc(100vh - 80px);
+    height: 100%;
+    overflow: hidden;
     background: #fff;
   }
   .cal-main {
@@ -3125,7 +3127,7 @@
   .view { display: none; padding-top: 62px; }
   .view.active { display: block; }
   #viewHome.active { padding-top: 0; position: fixed; top: 0; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); overflow: hidden; z-index: 1; }
-  #viewCalendar.active { padding-top: 0; }
+  #viewCalendar.active { padding-top: 0; position: fixed; top: 0; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); overflow: hidden; z-index: 1; }
 
   /* ==================== 全屏弹层 ==================== */
   .page-modal {
@@ -4818,8 +4820,8 @@
 <!-- 待办长按下拉菜单 -->
 <div class="td-menu-mask" id="todoMenuMask" onclick="closeTodoMenu(event)"></div>
 <div class="td-menu" id="todoMenu">
-  <div class="td-menu-item" id="todoMenuEdit" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="onTodoMenuEdit()">设置</div>
-  <div class="td-menu-item td-menu-danger" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="onTodoMenuDelete()">删除</div>
+  <div class="td-menu-item" id="todoMenuEdit" onclick="if(todoMenuBlockClicks)return;onTodoMenuEdit()">设置</div>
+  <div class="td-menu-item td-menu-danger" onclick="if(todoMenuBlockClicks)return;onTodoMenuDelete()">删除</div>
 </div>
 
 <!-- 删除确认弹窗 -->
@@ -8929,6 +8931,7 @@ let todoMenuTargetRep = false;
 let todoMenuClientX = 0;
 let todoMenuClientY = 0;
 
+let todoMenuBlockClicks = false;
 function showTodoMenu(id, fromCal, isRep, x, y) {
   todoMenuTargetId = id;
   todoMenuTargetFromCal = fromCal;
@@ -8941,10 +8944,13 @@ function showTodoMenu(id, fromCal, isRep, x, y) {
   menu.style.left = Math.min(x, window.innerWidth - 140) + 'px';
   menu.style.top = Math.min(y, window.innerHeight - 100) + 'px';
   // 延迟显示避免 touchend 后误触发菜单项 click
+  todoMenuBlockClicks = true;
   setTimeout(() => {
     menu.classList.add('show');
     mask.classList.add('show');
-  }, 50);
+    // 再延迟解除 click 拦截，确保松手后的 click 不会触发菜单项
+    setTimeout(() => { todoMenuBlockClicks = false; }, 300);
+  }, 80);
 }
 
 function closeTodoMenu(e) {
