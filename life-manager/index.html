@@ -10505,6 +10505,12 @@ function togglePlanQuad() {
   });
   mask.classList.add('show');
   picker.style.display = 'block';
+
+  // 保持输入法不收回
+  setTimeout(() => {
+    const input = document.getElementById('planInput');
+    if (input) { try { input.focus(); } catch(e) {} }
+  }, 50);
 }
 
 // 关闭四象限选择器
@@ -10520,6 +10526,11 @@ function pickQuad(quad) {
   planSheetCatId = quad;
   updateQuadUI();
   closeQuadPicker();
+  // 保持输入法不收回
+  setTimeout(() => {
+    const input = document.getElementById('planInput');
+    if (input) { try { input.focus(); } catch(e) {} }
+  }, 50);
   toast('已切换：' + (QUAD_CONFIG[quad] && QUAD_CONFIG[quad].full));
 }
 
