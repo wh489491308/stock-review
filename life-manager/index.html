@@ -1849,9 +1849,15 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px 8px;
+    padding: 4px 12px 4px;
     gap: 4px;
     background: #fff7ed;
+    position: relative;
+  }
+  .cal-header .date-picker-title-row {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .cal-weekdays {
     display: grid;
@@ -4523,9 +4529,7 @@
   <div class="cal-page">
     <div class="cal-main">
       <div class="cal-header">
-        <button class="date-picker-today" onclick="goCalToday()" title="今天">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" fill="currentColor"/></svg>
-        </button>
+        <span class="cal-filter-btn" id="calFilterBtn" onclick="toggleCalFilter(event)" title="仅显示健身">💪</span>
         <div class="date-picker-title-row">
           <button class="date-picker-month-nav" onclick="changeCalMonth(-1)">‹</button>
           <div class="date-picker-title" onclick="openCalYearMonthPicker()">
@@ -4535,7 +4539,9 @@
           <button class="date-picker-month-nav" onclick="changeCalMonth(1)">›</button>
         </div>
         <div style="width:auto;flex-shrink:0;display:flex;align-items:center;gap:8px;">
-          <span class="cal-filter-btn" id="calFilterBtn" onclick="toggleCalFilter(event)" title="仅显示健身">💪</span>
+          <button class="date-picker-today" onclick="goCalToday()" title="今天">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" fill="currentColor"/></svg>
+          </button>
           <button class="cal-todo-add-btn" id="calTodoAddBtn" onclick="openCalPlanSheet()">＋ 待办</button>
         </div>
       </div>
