@@ -8678,77 +8678,81 @@ function toggleHomeTodoExpense(e) {
   // 记录原始位置
   const rect = pill.getBoundingClientRect();
   const parentRect = pill.parentElement.getBoundingClientRect();
-  pill.style.left = (rect.left - parentRect.left) + 'px';
-  pill.style.top = (rect.top - parentRect.top) + 'px';
 
-  // 显示占位元素，保持布局不跳动
-  document.getElementById('homeTodoDatePillPlaceholder').classList.add('show');
+  // 先显示占位元素
+  const placeholder = document.getElementById('homeTodoDatePillPlaceholder');
+  placeholder.classList.add('show');
 
-  // 计算日期范围：胶囊显示日期往前一周
-  const pillDate = homeTodoSelectedDate || formatDateKey(new Date());
-  const pillDateObj = new Date(pillDate);
-  const weekAgo = new Date(pillDateObj);
-  weekAgo.setDate(weekAgo.getDate() - 6);
-  const weekAgoKey = formatDateKey(weekAgo);
+  // 用 rAF 确保 placeholder 渲染后再让 pill 脱离文档流
+  requestAnimationFrame(() => {
+    pill.style.left = (rect.left - parentRect.left) + 'px';
+    pill.style.top = (rect.top - parentRect.top) + 'px';
+    pill.classList.add('expanded');
 
-  const sorted = [...expenses]
-    .filter(item => item.date >= weekAgoKey && item.date <= pillDate)
-    .sort((a, b) => {
-      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (dateDiff !== 0) return dateDiff;
-      return b.id > a.id ? 1 : -1;
+    // 计算日期范围：胶囊显示日期往前一周
+    const pillDate = homeTodoSelectedDate || formatDateKey(new Date());
+    const pillDateObj = new Date(pillDate);
+    const weekAgo = new Date(pillDateObj);
+    weekAgo.setDate(weekAgo.getDate() - 6);
+    const weekAgoKey = formatDateKey(weekAgo);
+
+    const sorted = [...expenses]
+      .filter(item => item.date >= weekAgoKey && item.date <= pillDate)
+      .sort((a, b) => {
+        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return b.id > a.id ? 1 : -1;
+      });
+
+    if (sorted.length === 0) {
+      pill.innerHTML = '<div class="hte-empty">暂无账单记录</div>';
+      return;
+    }
+
+    const groups = {};
+    sorted.forEach(item => {
+      const key = item.date;
+      if (!groups[key]) {
+        const [y, m, d] = key.split('-').map(Number);
+        groups[key] = { year: y, month: m, day: d, items: [] };
+      }
+      groups[key].items.push(item);
     });
 
-  if (sorted.length === 0) {
-    pill.classList.add('expanded');
-    pill.innerHTML = '<div class="hte-empty">暂无账单记录</div>';
-    return;
-  }
+    const todayKey = formatDateKey(new Date());
+    const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
 
-  const groups = {};
-  sorted.forEach(item => {
-    const key = item.date;
-    if (!groups[key]) {
-      const [y, m, d] = key.split('-').map(Number);
-      groups[key] = { year: y, month: m, day: d, items: [] };
-    }
-    groups[key].items.push(item);
-  });
-
-  const todayKey = formatDateKey(new Date());
-  const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
-
-  const groupsHtml = Object.keys(groups).sort().reverse().map(key => {
-    const g = groups[key];
-    const dateObj = new Date(g.year, g.month - 1, g.day);
-    const weekday = weekdays[dateObj.getDay()];
-    const dateTitle = `${g.month}月${g.day}日 ${weekday}`;
-    const dayTotal = g.items.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-    const dayTotalStr = dayTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const itemsHtml = g.items.map(item => {
-      const cat = EXPENSE_CATS.find(c => c.id === item.catId) || { name: '其他', icon: '🔖' };
-      const displayName = cat.name + (item.subName && item.subName !== cat.name ? ' · ' + item.subName : '');
-      const amountStr = parseFloat(item.amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      return `<div class="expense-item-wrap" data-id="${item.id}">
-        <div class="expense-item">
-          <div class="expense-icon">${getExpenseIconHtml(item.catId, item.subName)}</div>
-          <div class="expense-main"><div class="expense-category">${escapeHtml(displayName)}</div></div>
-          <div class="expense-amount">${amountStr}</div>
-        </div>
-        <button class="expense-delete-swipe" data-action="delete-expense">删除</button>
+    const groupsHtml = Object.keys(groups).sort().reverse().map(key => {
+      const g = groups[key];
+      const dateObj = new Date(g.year, g.month - 1, g.day);
+      const weekday = weekdays[dateObj.getDay()];
+      const dateTitle = `${g.month}月${g.day}日 ${weekday}`;
+      const dayTotal = g.items.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+      const dayTotalStr = dayTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      const itemsHtml = g.items.map(item => {
+        const cat = EXPENSE_CATS.find(c => c.id === item.catId) || { name: '其他', icon: '🔖' };
+        const displayName = cat.name + (item.subName && item.subName !== cat.name ? ' · ' + item.subName : '');
+        const amountStr = parseFloat(item.amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return `<div class="expense-item-wrap" data-id="${item.id}">
+          <div class="expense-item">
+            <div class="expense-icon">${getExpenseIconHtml(item.catId, item.subName)}</div>
+            <div class="expense-main"><div class="expense-category">${escapeHtml(displayName)}</div></div>
+            <div class="expense-amount">${amountStr}</div>
+          </div>
+          <button class="expense-delete-swipe" data-action="delete-expense">删除</button>
+        </div>`;
+      }).join('');
+      return `<div class="expense-group">
+        <div class="expense-group-title"><span class="date-label">${dateTitle}</span><span class="day-total">支 ${dayTotalStr}</span></div>
+        <div class="expense-group-body">${itemsHtml}</div>
       </div>`;
     }).join('');
-    return `<div class="expense-group">
-      <div class="expense-group-title"><span class="date-label">${dateTitle}</span><span class="day-total">支 ${dayTotalStr}</span></div>
-      <div class="expense-group-body">${itemsHtml}</div>
-    </div>`;
-  }).join('');
 
-  pill.classList.add('expanded');
-  pill.innerHTML = `<div class="hte-scroll">${groupsHtml}</div>`;
+    pill.innerHTML = `<div class="hte-scroll">${groupsHtml}</div>`;
 
-  // 绑定滑动删除
-  pill.querySelectorAll('.expense-item-wrap').forEach(wrap => bindExpenseSwipe(wrap));
+    // 绑定滑动删除
+    pill.querySelectorAll('.expense-item-wrap').forEach(wrap => bindExpenseSwipe(wrap));
+  });
 }
 
 function toggleTodoItem(id, fromCal) {
