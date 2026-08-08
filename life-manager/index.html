@@ -10497,6 +10497,9 @@ function togglePlanQuad() {
     const tabsRect = tabs.getBoundingClientRect();
     picker.style.left = dividerRect.left + 'px';
     picker.style.top = tabsRect.bottom + 'px';
+    picker.style.right = 'auto';
+    picker.style.bottom = 'auto';
+    picker.style.transform = 'none';
   }
 
   // 标记当前选中象限（初始状态无选中）
