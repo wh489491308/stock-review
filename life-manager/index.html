@@ -595,7 +595,7 @@
   /* 今日计划首页 */
   .home-page {
     padding: 0 12px;
-    height: calc(100vh - 64px - env(safe-area-inset-bottom));
+    height: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -3095,7 +3095,7 @@
 
   .view { display: none; padding-top: 62px; }
   .view.active { display: block; }
-  #viewHome.active { padding-top: 0; height: 100vh; overflow: hidden; }
+  #viewHome.active { padding-top: 0; position: fixed; top: 0; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); overflow: hidden; z-index: 1; }
   #viewCalendar.active { padding-top: 0; }
 
   /* ==================== 全屏弹层 ==================== */
