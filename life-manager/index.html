@@ -804,62 +804,6 @@
     color: #1a1a1a;
     white-space: nowrap;
   }
-  /* 首页周日历 */
-  .home-week-calendar {
-    display: flex;
-    justify-content: space-between;
-    padding: 12px 16px 8px;
-    background: #fff;
-    margin-bottom: 8px;
-  }
-  .hwc-cell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    user-select: none;
-    padding: 4px 0;
-  }
-  .hwc-cell:active { opacity: 0.7; }
-  .hwc-weekday {
-    font-size: 12px;
-    color: #8a94a6;
-    font-weight: 500;
-  }
-  .hwc-day {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    font-weight: 600;
-    color: #1a1a1a;
-    border-radius: 50%;
-    box-sizing: border-box;
-  }
-  .hwc-cell.today .hwc-day {
-    border: 2px solid #ffa726;
-    color: #1a1a1a;
-  }
-  .hwc-cell.selected .hwc-day {
-    background: #fff7ed;
-    color: #ff9f43;
-  }
-  .hwc-dots {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    height: 6px;
-  }
-  .hwc-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-  }
   .home-todo-title::before {
     content: '';
     width: 3px;
@@ -4468,9 +4412,6 @@
       </div>
     </div>
 
-    <!-- 首页周日历 -->
-    <div class="home-week-calendar" id="homeWeekCalendar"></div>
-
     <div class="home-todo-header-row">
       <div class="home-todo-date-pill" id="homeTodoDatePill" onclick="toggleHomeTodoExpense(event)">
         <span class="home-todo-date-pill-text">8月7日 周五</span>
@@ -4947,7 +4888,7 @@ function switchTab(tab) {
   document.getElementById('view' + capitalize(tab)).classList.add('active');
   // 顶部栏仅训练 Tab 显示
   document.getElementById('topBar').style.display = (tab === 'training') ? '' : 'none';
-  if (tab === 'home') { homeTodoSelectedDate = formatDateKey(new Date()); renderHomeTodos(); renderHomeWeekCalendar(); }
+  if (tab === 'home') { homeTodoSelectedDate = formatDateKey(new Date()); renderHomeTodos(); }
   if (tab === 'calendar') renderCalPage();
   if (tab === 'training') renderTrainingTab();
   updateNavSlider();
@@ -8318,70 +8259,6 @@ function formatTime(totalSeconds) {
   return [h, m, s].map(x => String(x).padStart(2, '0')).join(':');
 }
 
-// 首页周日历渲染
-function renderHomeWeekCalendar() {
-  const container = document.getElementById('homeWeekCalendar');
-  if (!container) return;
-  loadTodos();
-  loadCalTodos();
-
-  const todayKey = formatDateKey(new Date());
-  const selectedKey = homeTodoSelectedDate || todayKey;
-
-  // 计算本周一
-  const selectedDate = new Date(selectedKey);
-  const selectedDay = selectedDate.getDay(); // 0-6, 0 是周日
-  const mondayOffset = selectedDay === 0 ? -6 : 1 - selectedDay;
-  const mondayDate = new Date(selectedDate);
-  mondayDate.setDate(selectedDate.getDate() + mondayOffset);
-
-  const weekdays = ['周一','周二','周三','周四','周五','周六','周日'];
-  const quadColors = { general: '#D4B682', important: '#CC7074', daily: '#ABC9B8', training: '#97A0CE' };
-
-  let html = '';
-  for (let i = 0; i < 7; i++) {
-    const cellDate = new Date(mondayDate);
-    cellDate.setDate(mondayDate.getDate() + i);
-    const key = formatDateKey(cellDate);
-    const dayNum = cellDate.getDate();
-    const isToday = key === todayKey;
-    const isSelected = key === selectedKey;
-
-    // 合并该日待办并按象限去重
-    const dayTodosList = [
-      ...todos.filter(t => t.date === key),
-      ...calTodos.filter(ct => ct.date === key)
-    ];
-    const seenCats = new Set();
-    const dots = [];
-    dayTodosList.forEach(t => {
-      const cat = t.catId || 'general';
-      if (!seenCats.has(cat)) {
-        seenCats.add(cat);
-        dots.push(quadColors[cat] || quadColors.general);
-      }
-    });
-
-    const dotsHtml = dots.map(c => `<span class="hwc-dot" style="background:${c}"></span>`).join('');
-    html += `
-      <div class="hwc-cell ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-date="${key}" onclick="selectHomeDate('${key}')">
-        <span class="hwc-weekday">${weekdays[i]}</span>
-        <span class="hwc-day">${dayNum}</span>
-        <div class="hwc-dots">${dotsHtml}</div>
-      </div>
-    `;
-  }
-  container.innerHTML = html;
-}
-
-// 点击首页周日历日期
-function selectHomeDate(key) {
-  homeTodoSelectedDate = key;
-  renderHomeWeekCalendar();
-  updateHomeTodoDatePill();
-  renderHomeTodos();
-}
-
 // ==================== 今日计划 ====================
 const TODO_CATS = [
   { id: 'daily', name: '日常', icon: '🏠', cls: 'tc-daily' },
@@ -8538,7 +8415,7 @@ function renderHomeTodos() {
       const card = arrow.closest('.quadrant-card');
       const body = card.querySelector('.qc-body');
       const catId = body.dataset.catId;
-      if (typeof openPlanSheet === 'function') openPlanSheet(catId);
+      if (typeof openPlanSheet === 'function') openPlanSheet(catId, homeTodoSelectedDate);
     });
   });
 
@@ -11050,7 +10927,7 @@ function init() {
     switchSubTab(subTab);
   }
   renderAll();
-  if (mainTab === 'home') { renderHomeTodos(); renderHomeWeekCalendar(); }
+  if (mainTab === 'home') { renderHomeTodos(); }
   // 窗口变化时更新底部导航滑块
   window.addEventListener('resize', updateNavSlider);
   // 新增计划弹窗：监听系统键盘高度
