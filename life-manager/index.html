@@ -7172,7 +7172,8 @@ function getSessionElapsed() {
 // 判断训练是否已经开始过
 function isTrainingStarted() {
   if (!trainSession) return false;
-  return trainSession.hasStarted || trainSession.running || getSessionElapsed() > 0;
+  // 仅依据 hasStarted 标志：只有用户点击过"开始"按钮才算已开始
+  return !!trainSession.hasStarted;
 }
 
 // 倒计时状态管理（全局，不依赖 DOM，切换 Tab / 重建 DOM 不受影响）
@@ -11405,8 +11406,12 @@ document.getElementById('accountPanel').addEventListener('click', (e) => {
     }
     // 训练项点击跳转到计划列表
     if (item.dataset.train) { goToPlan(item.dataset.train); return; }
-    // 训练象限待办点击圆圈 → 跳转训练列表并匹配
+    // 训练象限待办点击圆圈：已完成则切换为未完成（不跳转），未完成则跳转训练列表
     if (item.dataset.trainTodo && e.target.closest('.qti-check')) {
+      if (item.classList.contains('done')) {
+        toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
+        return;
+      }
       goToTrainingPlan(item.dataset.trainText);
       return;
     }
@@ -11434,8 +11439,12 @@ document.getElementById('accountPanel').addEventListener('click', (e) => {
     if (longPressed) { longPressed = false; return; }
     // 训练项点击跳转到计划列表
     if (item.dataset.train) { goToPlan(item.dataset.train); return; }
-    // 训练象限待办点击圆圈 → 跳转训练列表并匹配
+    // 训练象限待办点击圆圈：已完成则切换为未完成（不跳转），未完成则跳转训练列表
     if (item.dataset.trainTodo && e.target.closest('.qti-check')) {
+      if (item.classList.contains('done')) {
+        toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
+        return;
+      }
       goToTrainingPlan(item.dataset.trainText);
       return;
     }
