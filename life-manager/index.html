@@ -1886,11 +1886,12 @@
     flex-shrink: 0;
     padding: 0 1px;
     gap: 1px;
+    background: #d0d0d0;
   }
   .cal-month .date-picker-day {
     display: block;
     font-size: 16px; color: #1a1a1a;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
     width: 100%;
     height: 100%;
@@ -1898,7 +1899,7 @@
     overflow: hidden;
     position: relative;
     text-align: center;
-    border: 1px dashed #d0d0d0;
+    background: #fff;
   }
   .cal-month .date-picker-day .dpd-num {
     line-height: 1.3;
@@ -2018,7 +2019,7 @@
   .cal-month.filter-training .date-picker-day.today.selected,
   .cal-month.filter-training .date-picker-day.other-month.selected:not(.today) {
     background: #fff;
-    border: 2px solid #ff9800;
+    box-shadow: inset 0 0 0 2px #ff9800;
   }
   .dpd-todo-row.dpd-todo-done {
     text-decoration: line-through;
@@ -2033,9 +2034,8 @@
   /* 展开的单元格 */
   .cal-month .date-picker-day.cal-expanded {
     background: #fff;
-    border: 2px solid #ff9800;
+    box-shadow: inset 0 0 0 2px #ff9800, 0 4px 12px rgba(0,0,0,0.12);
     border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     z-index: 5;
     overflow: visible !important;
     height: auto !important;
@@ -2056,15 +2056,15 @@
     color: #fff;
     font-weight: 700;
   }
-  .cal-month .date-picker-day.today { background: transparent; color: #1a1a1a; }
-  .cal-month .date-picker-day.today.selected { background: #fff8e1; border: 2px solid #ff9800; color: #1a1a1a; }
-  .cal-month .date-picker-day.selected:not(.today) { background: #fff8e1; border: 2px solid #ff9800; color: #1a1a1a; }
+  .cal-month .date-picker-day.today { background: #fff; color: #1a1a1a; }
+  .cal-month .date-picker-day.today.selected { background: #fff8e1; box-shadow: inset 0 0 0 2px #ff9800; color: #1a1a1a; }
+  .cal-month .date-picker-day.selected:not(.today) { background: #fff8e1; box-shadow: inset 0 0 0 2px #ff9800; color: #1a1a1a; }
   .cal-month .date-picker-day.selected:not(.today) .dpd-num { color: #1a1a1a; }
   .cal-month .date-picker-day.other-month { color: #ccc; }
   .cal-month .date-picker-day.other-month .dpd-num { color: #ccc; }
   .cal-month .date-picker-day.other-month.weekend { color: #ffcc80; }
   .cal-month .date-picker-day.other-month.weekend .dpd-num { color: #ffcc80; }
-  .cal-month .date-picker-day.other-month.selected:not(.today) { background: #fff8e1; border: 2px solid #ff9800; color: #ccc; }
+  .cal-month .date-picker-day.other-month.selected:not(.today) { background: #fff8e1; box-shadow: inset 0 0 0 2px #ff9800; color: #ccc; }
   .cal-month .date-picker-day.other-month.selected:not(.today) .dpd-num { color: #888; }
 
   /* 年月滑动选择器 */
