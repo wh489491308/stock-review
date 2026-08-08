@@ -2680,10 +2680,6 @@
   .quad-picker-mask.show { display: block; }
   .quad-picker {
     position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    /* 紧贴四象限 Tab 上方（弹窗底边上方约 170px，确保在弹窗内部） */
-    bottom: calc(var(--kb-h, 0px) + env(safe-area-inset-bottom, 0px) + 170px);
     z-index: 226;
     width: 270px;
     background: #fff;
@@ -10492,6 +10488,17 @@ function togglePlanQuad() {
   const mask = document.getElementById('quadPickerMask');
   const picker = document.getElementById('quadPicker');
   if (!mask || !picker) return;
+
+  // 定位：左边缘对齐分隔线（图标右侧灰线），上边缘对齐 tabs 下边缘
+  const divider = document.querySelector('.plan-input-divider');
+  const tabs = document.querySelector('.plan-sheet-tabs');
+  if (divider && tabs) {
+    const dividerRect = divider.getBoundingClientRect();
+    const tabsRect = tabs.getBoundingClientRect();
+    picker.style.left = dividerRect.left + 'px';
+    picker.style.top = tabsRect.bottom + 'px';
+  }
+
   // 标记当前选中象限（初始状态无选中）
   document.querySelectorAll('.quad-picker-cell').forEach(c => {
     c.classList.toggle('selected', planSheetCatId && c.dataset.quad === planSheetCatId);
