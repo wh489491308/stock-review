@@ -2675,15 +2675,13 @@
   .quad-picker-mask {
     position: fixed;
     inset: 0;
-    z-index: 225;
+    z-index: 228;
     display: none;
   }
   .quad-picker-mask.show { display: block; }
   .quad-picker {
-    position: absolute;
-    left: 54px;
-    top: -47px;
-    z-index: 226;
+    position: fixed;
+    z-index: 230;
     width: 270px;
     background: #fff;
     border-radius: 14px;
@@ -4693,30 +4691,10 @@
     <div class="plan-sheet-body">
       <div class="plan-input-row">
         <div class="plan-input-icon" onclick="togglePlanQuad()">无</div>
-        <div class="plan-input-divider"></div>
+        <div class="plan-input-divider" id="quadPickerAnchorDivider"></div>
         <input type="text" class="plan-input" id="planInput" placeholder="我准备做..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
         <div class="plan-input-check" onclick="confirmPlanSheet()">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        </div>
-        <div class="quad-picker" id="quadPicker" onclick="event.stopPropagation()">
-          <div class="quad-picker-axes">
-            <div class="quad-picker-arrow up"></div>
-            <div class="quad-picker-arrow right"></div>
-            <div class="quad-picker-axis-h"></div>
-            <div class="quad-picker-axis-v"></div>
-            <div class="quad-picker-cells">
-              <div class="quad-picker-cell" data-quad="general"  onclick="pickQuad('general')">紧急不重要</div>
-              <div class="quad-picker-cell" data-quad="important" onclick="pickQuad('important')">重要且紧急</div>
-              <div class="quad-picker-cell" data-quad="daily"    onclick="pickQuad('daily')">不重要不紧急</div>
-              <div class="quad-picker-cell" data-quad="training" onclick="pickQuad('training')">重要不紧急</div>
-            </div>
-            <div class="quad-picker-dots">
-              <span class="quad-picker-dot" data-quad="general"  style="background:#D4B682;"></span>
-              <span class="quad-picker-dot" data-quad="important" style="background:#CC7074;"></span>
-              <span class="quad-picker-dot" data-quad="daily"    style="background:#ABC9B8;"></span>
-              <span class="quad-picker-dot" data-quad="training" style="background:#97A0CE;"></span>
-            </div>
-          </div>
         </div>
       </div>
       <div class="plan-repeat-panel show" id="planRepeatPanel">
@@ -4774,6 +4752,29 @@
 
 <!-- 四象限选择器遮罩 -->
 <div class="quad-picker-mask" id="quadPickerMask" onclick="closeQuadPicker()"></div>
+
+<!-- 四象限选择器 -->
+<div class="quad-picker-mask" id="quadPickerMask" onclick="closeQuadPicker()"></div>
+<div class="quad-picker" id="quadPicker" onclick="event.stopPropagation()">
+  <div class="quad-picker-axes">
+    <div class="quad-picker-arrow up"></div>
+    <div class="quad-picker-arrow right"></div>
+    <div class="quad-picker-axis-h"></div>
+    <div class="quad-picker-axis-v"></div>
+    <div class="quad-picker-cells">
+      <div class="quad-picker-cell" data-quad="general"  onclick="pickQuad('general')">紧急不重要</div>
+      <div class="quad-picker-cell" data-quad="important" onclick="pickQuad('important')">重要且紧急</div>
+      <div class="quad-picker-cell" data-quad="daily"    onclick="pickQuad('daily')">不重要不紧急</div>
+      <div class="quad-picker-cell" data-quad="training" onclick="pickQuad('training')">重要不紧急</div>
+    </div>
+    <div class="quad-picker-dots">
+      <span class="quad-picker-dot" data-quad="general"  style="background:#D4B682;"></span>
+      <span class="quad-picker-dot" data-quad="important" style="background:#CC7074;"></span>
+      <span class="quad-picker-dot" data-quad="daily"    style="background:#ABC9B8;"></span>
+      <span class="quad-picker-dot" data-quad="training" style="background:#97A0CE;"></span>
+    </div>
+  </div>
+</div>
 
 <!-- 训练计划选择器 -->
 <div class="quad-picker-mask" id="trainPlanPickerMask" onclick="closeTrainPlanPicker()"></div>
@@ -10489,15 +10490,33 @@ function pickRepeatEndDate() {
 // 打开四象限选择器
 function togglePlanQuad() {
   const mask = document.getElementById('quadPickerMask');
-  const picker = document.querySelector('.plan-input-row .quad-picker');
+  const picker = document.getElementById('quadPicker');
   if (!mask || !picker) return;
 
-  // 标记当前选中象限（初始状态无选中）
+  // 标记当前选中象限
   picker.querySelectorAll('.quad-picker-cell').forEach(c => {
     c.classList.toggle('selected', planSheetCatId && c.dataset.quad === planSheetCatId);
   });
-  mask.classList.add('show');
+
+  // 先显示但不设置位置，强制浏览器完成布局后再计算
+  picker.style.visibility = 'hidden';
   picker.style.display = 'block';
+  mask.classList.add('show');
+  void picker.offsetWidth;
+
+  // 计算定位：左边缘对齐分隔线，上边缘对齐 tabs 下边缘
+  const divider = document.getElementById('quadPickerAnchorDivider');
+  const tabs = document.querySelector('.plan-sheet-tabs');
+  if (divider && tabs) {
+    const dividerRect = divider.getBoundingClientRect();
+    const tabsRect = tabs.getBoundingClientRect();
+    picker.style.left = dividerRect.left + 'px';
+    picker.style.top = tabsRect.bottom + 'px';
+    picker.style.right = 'auto';
+    picker.style.bottom = 'auto';
+    picker.style.transform = 'none';
+  }
+  picker.style.visibility = '';
 
   // 保持输入法不收回
   setTimeout(() => {
@@ -10509,7 +10528,7 @@ function togglePlanQuad() {
 // 关闭四象限选择器
 function closeQuadPicker() {
   const mask = document.getElementById('quadPickerMask');
-  const picker = document.querySelector('.plan-input-row .quad-picker');
+  const picker = document.getElementById('quadPicker');
   if (mask) mask.classList.remove('show');
   if (picker) picker.style.display = 'none';
 }
