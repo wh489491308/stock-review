@@ -594,13 +594,15 @@
   }
   /* 今日计划首页 */
   .home-page {
-    padding: 0 12px 140px;
-    min-height: 100vh;
+    padding: 0 12px;
+    height: calc(100vh - 64px - env(safe-area-inset-bottom));
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   .home-page .home-content {
-    min-height: auto;
-    padding: 10px 0 0;
+    display: none;
   }
 
   /* 月度支出概览卡片 */
@@ -611,6 +613,7 @@
     overflow: hidden;
     margin-bottom: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    flex-shrink: 0;
   }
   .mec-pattern {
     position: absolute;
@@ -675,7 +678,8 @@
     position: relative;
     display: flex;
     align-items: center;
-    padding: 0 0 16px 0;
+    padding: 0 0 8px 0;
+    flex-shrink: 0;
   }
   .home-todo-banner {
     display: flex;
@@ -811,6 +815,7 @@
     padding: 8px 16px 2px;
     background: #fff;
     margin-bottom: 8px;
+    flex-shrink: 0;
   }
   .hwc-cell {
     flex: 1;
@@ -878,6 +883,10 @@
   /* 四象限网格 */
   .home-todo-grid-wrapper {
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   .clear-todos-btn {
     display: block;
@@ -943,7 +952,8 @@
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     gap: 14px;
-    height: 420px;
+    flex: 1;
+    min-height: 0;
   }
 
   /* 象限卡片 — 纯 CSS 绘制笔记本 */
@@ -3085,7 +3095,7 @@
 
   .view { display: none; padding-top: 62px; }
   .view.active { display: block; }
-  #viewHome.active { padding-top: 0; }
+  #viewHome.active { padding-top: 0; height: 100vh; overflow: hidden; }
   #viewCalendar.active { padding-top: 0; }
 
   /* ==================== 全屏弹层 ==================== */
