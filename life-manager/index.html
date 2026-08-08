@@ -871,6 +871,12 @@
     height: 5px;
     border-radius: 50%;
   }
+  .hwc-expense {
+    font-size: 8px;
+    font-weight: 700;
+    color: #ff4d4f;
+    line-height: 1;
+  }
   .home-todo-title::before {
     content: '';
     width: 3px;
@@ -8340,6 +8346,7 @@ function renderHomeWeekCalendar() {
   if (!container) return;
   loadTodos();
   loadCalTodos();
+  loadExpenses();
 
   const todayKey = formatDateKey(new Date());
   const selectedKey = homeTodoSelectedDate || todayKey;
@@ -8353,6 +8360,13 @@ function renderHomeWeekCalendar() {
 
   const weekdays = ['周一','周二','周三','周四','周五','周六','周日'];
   const quadColors = { general: '#D4B682', important: '#CC7074', daily: '#ABC9B8', training: '#97A0CE' };
+
+  // 预计算每日支出合计
+  const expenseMap = {};
+  expenses.forEach(e => {
+    if (!e || !e.date) return;
+    expenseMap[e.date] = (expenseMap[e.date] || 0) + parseFloat(e.amount || 0);
+  });
 
   let html = '';
   for (let i = 0; i < 7; i++) {
@@ -8378,11 +8392,18 @@ function renderHomeWeekCalendar() {
       }
     });
 
+    // 当日支出金额
+    const dayExpense = expenseMap[key] || 0;
+    const expenseHtml = dayExpense > 0
+      ? `<span class="hwc-expense">${dayExpense >= 1000 ? (dayExpense/1000).toFixed(1)+'k' : dayExpense.toFixed(0)}</span>`
+      : '';
+
     const dotsHtml = dots.map(c => `<span class="hwc-dot" style="background:${c}"></span>`).join('');
     html += `
       <div class="hwc-cell ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-date="${key}" onclick="selectHomeDate('${key}')">
         <span class="hwc-weekday">${weekdays[i]}</span>
         <span class="hwc-day">${dayNum}</span>
+        ${expenseHtml}
         <div class="hwc-dots">${dotsHtml}</div>
       </div>
     `;
