@@ -9164,15 +9164,35 @@ function showTodoMenu(id, fromCal, isRep, x, y) {
   // 定位菜单（避免超出屏幕）
   menu.style.left = Math.min(x, window.innerWidth - 140) + 'px';
   menu.style.top = Math.min(y, window.innerHeight - 100) + 'px';
-  // 延迟显示避免 touchend 后误触发菜单项 click
+  // 激活 click 拦截：防止长按松手时合成的 click 误触菜单项
+  // 拦截不按固定时间解除，而是在用户松手后真正发生一次新的 touchstart/pointerdown 时才解除
   todoMenuBlockClicks = true;
+  // 延迟显示，确保 touchend 先于菜单项可点击
   setTimeout(() => {
     menu.classList.add('show');
     mask.classList.add('show');
-    // 再延迟解除 click 拦截，确保松手后的 click 不会触发菜单项
-    setTimeout(() => { todoMenuBlockClicks = false; }, 300);
   }, 80);
 }
+
+// 当用户松手后真正开始一次新的触摸/点击时，解除菜单 click 拦截
+// 这样无论长按多久松手，松手瞬间的合成 click 都会被拦截，不会误触菜单项
+(function() {
+  const unblock = () => {
+    // 新一次触摸/按下开始，立即解除拦截，让随后的 click 能正常触发菜单项
+    todoMenuBlockClicks = false;
+  };
+  // 新一次触摸开始时解除（touchstart 在松手后的下一次触摸才触发，不会在松手瞬间触发）
+  document.addEventListener('touchstart', (e) => {
+    if (e.target.closest('#todoMenu') || e.target.closest('#todoMenuMask')) {
+      unblock();
+    }
+  }, { passive: true, capture: true });
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#todoMenu') || e.target.closest('#todoMenuMask')) {
+      unblock();
+    }
+  }, { capture: true });
+})();
 
 function closeTodoMenu(e) {
   if (e && e.target && e.target.id !== 'todoMenuMask') return;
@@ -11377,8 +11397,10 @@ document.getElementById('accountPanel').addEventListener('click', (e) => {
       // 阻止长按松手时误触菜单项
       e.preventDefault();
       e.stopPropagation();
-      // 延迟重置，防止后续 click 冒泡到菜单项
+      // 重新激活 click 拦截并延长解除时间，防止长按较久松手后合成的 click 触发菜单项（如"设置"）
+      todoMenuBlockClicks = true;
       setTimeout(() => { longPressed = false; }, 100);
+      setTimeout(() => { todoMenuBlockClicks = false; }, 500);
       return;
     }
     // 训练项点击跳转到计划列表
