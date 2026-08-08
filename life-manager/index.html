@@ -6140,19 +6140,27 @@ function handleAdd() {
       toast('已添加');
     };
     tempCard.querySelector('.save-btn').onclick = save;
-    // 点击动作卡片外部区域时保存
+    // 输入框失焦时保存：仅当焦点不在本卡片内部时才保存（避免点击下拉框时误保存）
+    input.onblur = () => {
+      setTimeout(() => {
+        if (saved) return;
+        const active = document.activeElement;
+        if (!tempCard.contains(active)) save();
+      }, 0);
+    };
+    // 点击动作卡片外部区域时保存（使用 click 冒泡，原生 select 选项选择不视为外部）
     const outsideClickHandler = (e) => {
-      if (saved) { document.removeEventListener('pointerdown', outsideClickHandler, true); return; }
+      if (saved) { document.removeEventListener('click', outsideClickHandler, true); return; }
       if (!tempCard.contains(e.target)) {
-        document.removeEventListener('pointerdown', outsideClickHandler, true);
+        document.removeEventListener('click', outsideClickHandler, true);
         save();
       }
     };
-    // 延迟注册，避免当前点击事件冒泡触发
-    setTimeout(() => document.addEventListener('pointerdown', outsideClickHandler, true), 0);
+    // 延迟注册，避免当前点击事件误触发
+    setTimeout(() => document.addEventListener('click', outsideClickHandler, true), 0);
     input.onkeydown = (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); save(); document.removeEventListener('pointerdown', outsideClickHandler, true); }
-      if (e.key === 'Escape') { saved = true; document.removeEventListener('pointerdown', outsideClickHandler, true); tempCard.remove(); }
+      if (e.key === 'Enter') { e.preventDefault(); save(); document.removeEventListener('click', outsideClickHandler, true); }
+      if (e.key === 'Escape') { saved = true; document.removeEventListener('click', outsideClickHandler, true); tempCard.remove(); }
     };
   } else if (subTab === 'plan') {
     openPlanEditor();
