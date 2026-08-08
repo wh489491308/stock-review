@@ -6147,34 +6147,34 @@ function handleAdd() {
       renderActions();
       toast('已添加');
     };
-    tempCard.querySelector('.save-btn').onclick = save;
-
-    // 防止点击训练类型下拉框时误保存：select 获得/失去焦点期间屏蔽保存
+    // 保存触发：
+    // 1) 点击保存按钮
+    // 2) 输入框失焦且焦点移到卡片外部
+    // 3) 下拉框失焦且焦点移到卡片外部
+    // 点击下拉框选项期间不会误保存
     let selectInteracting = false;
     modeSelect.onpointerdown = () => { selectInteracting = true; };
     modeSelect.onfocus = () => { selectInteracting = true; };
     modeSelect.onblur = () => { selectInteracting = false; };
 
-    // 输入框失焦时保存：仅当焦点移到卡片外部（且不是下拉框交互）时才保存
+    const shouldSaveOnBlur = (related) => {
+      if (saved) return false;
+      if (selectInteracting) return false;
+      if (related && tempCard.contains(related)) return false;
+      return true;
+    };
+
     input.addEventListener('focusout', (e) => {
-      if (saved) return;
-      const related = e.relatedTarget;
-      if (selectInteracting || (related && tempCard.contains(related))) return;
-      save();
+      if (shouldSaveOnBlur(e.relatedTarget)) save();
+    });
+    modeSelect.addEventListener('focusout', (e) => {
+      if (shouldSaveOnBlur(e.relatedTarget)) save();
     });
 
-    // 点击动作卡片外部区域时保存
-    const outsideClickHandler = (e) => {
-      if (saved) { document.removeEventListener('click', outsideClickHandler, true); return; }
-      if (selectInteracting || tempCard.contains(e.target)) return;
-      document.removeEventListener('click', outsideClickHandler, true);
-      save();
-    };
-    // 延迟注册，避免当前点击事件误触发
-    setTimeout(() => document.addEventListener('click', outsideClickHandler, true), 0);
+    tempCard.querySelector('.save-btn').onclick = save;
     input.onkeydown = (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); save(); document.removeEventListener('click', outsideClickHandler, true); }
-      if (e.key === 'Escape') { saved = true; document.removeEventListener('click', outsideClickHandler, true); tempCard.remove(); }
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      if (e.key === 'Escape') { saved = true; tempCard.remove(); }
     };
   } else if (subTab === 'plan') {
     openPlanEditor();
