@@ -8718,6 +8718,7 @@ function toggleTodoItem(id, fromCal) {
     saveTodos();
   }
   renderHomeTodos();
+  renderHomeWeekCalendar();
   if (typeof renderCalPage === 'function') renderCalPage();
 }
 
@@ -8731,6 +8732,7 @@ function deleteTodoItem(id, fromCal) {
     saveTodos();
   }
   renderHomeTodos();
+  renderHomeWeekCalendar();
 }
 
 function clearAllTodos() {
@@ -8740,6 +8742,7 @@ function clearAllTodos() {
   saveTodos();
   saveCalTodos();
   renderHomeTodos();
+  renderHomeWeekCalendar();
   if (typeof renderCalPage === 'function') renderCalPage();
   toast('已清除所有待办');
 }
@@ -8990,6 +8993,7 @@ function deleteRepeatTodo(id, mode) {
   }
   saveTodos();
   renderHomeTodos();
+  renderHomeWeekCalendar();
 }
 
 // 编辑待办（打开 plan sheet 预填）
@@ -9052,6 +9056,7 @@ function confirmTodoSheet() {
   saveTodos();
   closeTodoSheet();
   renderHomeTodos();
+  renderHomeWeekCalendar();
 }
 
 // ==================== 日历待办 ====================
@@ -10679,6 +10684,7 @@ function confirmPlanSheet() {
   saveTodos();
   closePlanSheet();
   renderHomeTodos();
+  renderHomeWeekCalendar();
   // 若当前在日历页面，刷新日历
   if (mainTab === 'calendar') renderCalPage();
   if (typeof toast === 'function') {
