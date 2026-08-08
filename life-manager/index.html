@@ -252,8 +252,8 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    position: fixed;
-    top: 64px;
+    position: sticky;
+    top: 62px;
     left: 0;
     right: 0;
     z-index: 99;
@@ -278,7 +278,7 @@
 
   /* 动作列表 */
   .action-list {
-    padding: 70px 16px 12px;
+    padding: 12px 16px;
   }
   .action-list-inner {
     background: #fff;
@@ -295,6 +295,7 @@
     padding: 0;
     background: #fff;
     border-bottom: 1px solid #f5f5f5;
+    touch-action: pan-y;
   }
   .action-card:last-child { border-bottom: none; }
   .action-card-header {
@@ -3466,6 +3467,12 @@
     border-bottom: 1px solid #f0f0f0;
     flex-shrink: 0;
   }
+  .picker-part-tabs .part-tabs {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+  }
 
   /* 选择动作列表卡片 */
   #pickerActionList {
@@ -4320,6 +4327,7 @@
     border-bottom: 1px solid #f5f5f5;
     padding: 11px 16px;
     background: #fff;
+    touch-action: pan-y;
   }
   .plan-selected-item:last-child { border-bottom: none; }
   .plan-selected-item .ps-header {
@@ -6140,21 +6148,32 @@ function handleAdd() {
       toast('已添加');
     };
     tempCard.querySelector('.save-btn').onclick = save;
-    // 输入框失焦时保存：仅当焦点不在本卡片内部时才保存（避免点击下拉框时误保存）
-    input.onblur = () => {
-      setTimeout(() => {
-        if (saved) return;
-        const active = document.activeElement;
-        if (!tempCard.contains(active)) save();
-      }, 0);
+
+    // 防止点击训练类型下拉框时误保存：select 获得/失去焦点期间屏蔽保存
+    let selectInteracting = false;
+    let selectBlurTimer = null;
+    modeSelect.onfocus = () => {
+      selectInteracting = true;
+      clearTimeout(selectBlurTimer);
     };
-    // 点击动作卡片外部区域时保存（使用 click 冒泡，原生 select 选项选择不视为外部）
+    modeSelect.onblur = () => {
+      selectBlurTimer = setTimeout(() => { selectInteracting = false; }, 200);
+    };
+
+    // 输入框失焦时保存：仅当焦点移到卡片外部（且不是下拉框交互）时才保存
+    input.addEventListener('focusout', (e) => {
+      if (saved) return;
+      const related = e.relatedTarget;
+      if (selectInteracting || (related && tempCard.contains(related))) return;
+      save();
+    });
+
+    // 点击动作卡片外部区域时保存
     const outsideClickHandler = (e) => {
       if (saved) { document.removeEventListener('click', outsideClickHandler, true); return; }
-      if (!tempCard.contains(e.target)) {
-        document.removeEventListener('click', outsideClickHandler, true);
-        save();
-      }
+      if (selectInteracting || tempCard.contains(e.target)) return;
+      document.removeEventListener('click', outsideClickHandler, true);
+      save();
     };
     // 延迟注册，避免当前点击事件误触发
     setTimeout(() => document.addEventListener('click', outsideClickHandler, true), 0);
@@ -10522,6 +10541,9 @@ function togglePlanQuad() {
   const picker = document.getElementById('quadPicker');
   if (!mask || !picker) return;
 
+  // 关闭训练计划选择器，避免两个弹层重叠
+  closeTrainPlanPicker();
+
   // 标记当前选中象限
   picker.querySelectorAll('.quad-picker-cell').forEach(c => {
     c.classList.toggle('selected', planSheetCatId && c.dataset.quad === planSheetCatId);
@@ -10615,6 +10637,9 @@ function toggleTrainPlanPicker() {
   const input = document.getElementById('planInput');
   if (input) input.blur();
 
+  // 关闭四象限选择器，避免两个弹层重叠
+  closeQuadPicker();
+
   const mask = document.getElementById('trainPlanPickerMask');
   const picker = document.getElementById('trainPlanPicker');
   if (!mask || !picker) return;
@@ -10640,8 +10665,32 @@ function toggleTrainPlanPicker() {
   if (trainPlanSelectedPart) partSelect.value = trainPlanSelectedPart;
 
   mask.classList.add('show');
+
+  // 与四象限选择器使用相同的定位逻辑：先隐藏测量再显示
+  picker.style.visibility = 'hidden';
   picker.style.display = 'block';
+  picker.style.opacity = '0';
   void picker.offsetWidth;
+
+  const anchor = document.getElementById('quadPickerAnchorDivider');
+  const tabs = document.querySelector('.plan-sheet-tabs');
+  if (anchor && tabs) {
+    const anchorRect = anchor.getBoundingClientRect();
+    const tabsRect = tabs.getBoundingClientRect();
+    let left = anchorRect.right;
+    let top = tabsRect.bottom;
+    const pickerW = picker.offsetWidth;
+    const vw = window.innerWidth;
+    if (left + pickerW > vw - 8) {
+      left = vw - pickerW - 8;
+    }
+    picker.style.left = left + 'px';
+    picker.style.top = top + 'px';
+  }
+
+  picker.style.visibility = 'visible';
+  void picker.offsetWidth;
+  picker.style.opacity = '';
   picker.classList.add('show');
 }
 
@@ -10651,7 +10700,13 @@ function closeTrainPlanPicker() {
   if (mask) mask.classList.remove('show');
   if (picker) {
     picker.classList.remove('show');
-    setTimeout(() => { picker.style.display = 'none'; }, 180);
+    picker.style.opacity = '0';
+    setTimeout(() => {
+      picker.style.display = 'none';
+      picker.style.visibility = '';
+      picker.style.left = '';
+      picker.style.top = '';
+    }, 180);
   }
 }
 
