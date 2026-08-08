@@ -726,6 +726,7 @@
     user-select: none;
     flex-shrink: 0;
     width: 135px;
+    height: 39px;
     box-sizing: border-box;
   }
   .home-todo-date-pill:active { background: #ffedd5; }
@@ -747,7 +748,7 @@
     display: none;
     flex-shrink: 0;
     width: 135px;
-    height: 37px;
+    height: 39px;
     box-sizing: border-box;
   }
   .home-todo-date-pill-placeholder.show {
@@ -8682,15 +8683,16 @@ function toggleHomeTodoExpense(e) {
   // 先显示占位元素
   const placeholder = document.getElementById('homeTodoDatePillPlaceholder');
   placeholder.classList.add('show');
+  // 强制同步重排，确保 placeholder 已参与布局
+  void placeholder.offsetHeight;
 
-  // 用 rAF 确保 placeholder 渲染后再让 pill 脱离文档流
-  requestAnimationFrame(() => {
-    pill.style.left = (rect.left - parentRect.left) + 'px';
-    pill.style.top = (rect.top - parentRect.top) + 'px';
-    pill.classList.add('expanded');
+  // 立刻让 pill 脱离文档流（此时 placeholder 已占位）
+  pill.style.left = (rect.left - parentRect.left) + 'px';
+  pill.style.top = (rect.top - parentRect.top) + 'px';
+  pill.classList.add('expanded');
 
-    // 计算日期范围：胶囊显示日期往前一周
-    const pillDate = homeTodoSelectedDate || formatDateKey(new Date());
+  // 计算日期范围
+  const pillDate = homeTodoSelectedDate || formatDateKey(new Date());
     const pillDateObj = new Date(pillDate);
     const weekAgo = new Date(pillDateObj);
     weekAgo.setDate(weekAgo.getDate() - 6);
@@ -8752,7 +8754,6 @@ function toggleHomeTodoExpense(e) {
 
     // 绑定滑动删除
     pill.querySelectorAll('.expense-item-wrap').forEach(wrap => bindExpenseSwipe(wrap));
-  });
 }
 
 function toggleTodoItem(id, fromCal) {
