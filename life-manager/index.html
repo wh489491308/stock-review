@@ -727,7 +727,6 @@
     flex-shrink: 0;
     width: 135px;
     box-sizing: border-box;
-    transition: border-radius 0.2s;
   }
   .home-todo-date-pill:active { background: #ffedd5; }
   .home-todo-date-pill.expanded {
@@ -749,6 +748,7 @@
     flex-shrink: 0;
     width: 135px;
     height: 37px;
+    box-sizing: border-box;
   }
   .home-todo-date-pill-placeholder.show {
     display: block;
@@ -8700,8 +8700,8 @@ function toggleHomeTodoExpense(e) {
     });
 
   if (sorted.length === 0) {
-    pill.innerHTML = '<div class="hte-empty">暂无账单记录</div>';
     pill.classList.add('expanded');
+    pill.innerHTML = '<div class="hte-empty">暂无账单记录</div>';
     return;
   }
 
@@ -8744,8 +8744,8 @@ function toggleHomeTodoExpense(e) {
     </div>`;
   }).join('');
 
-  pill.innerHTML = `<div class="hte-scroll">${groupsHtml}</div>`;
   pill.classList.add('expanded');
+  pill.innerHTML = `<div class="hte-scroll">${groupsHtml}</div>`;
 
   // 绑定滑动删除
   pill.querySelectorAll('.expense-item-wrap').forEach(wrap => bindExpenseSwipe(wrap));
