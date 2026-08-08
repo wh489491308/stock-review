@@ -6140,10 +6140,19 @@ function handleAdd() {
       toast('已添加');
     };
     tempCard.querySelector('.save-btn').onclick = save;
-    input.onblur = () => setTimeout(save, 200);
+    // 点击动作卡片外部区域时保存
+    const outsideClickHandler = (e) => {
+      if (saved) { document.removeEventListener('pointerdown', outsideClickHandler, true); return; }
+      if (!tempCard.contains(e.target)) {
+        document.removeEventListener('pointerdown', outsideClickHandler, true);
+        save();
+      }
+    };
+    // 延迟注册，避免当前点击事件冒泡触发
+    setTimeout(() => document.addEventListener('pointerdown', outsideClickHandler, true), 0);
     input.onkeydown = (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); save(); }
-      if (e.key === 'Escape') { saved = true; tempCard.remove(); }
+      if (e.key === 'Enter') { e.preventDefault(); save(); document.removeEventListener('pointerdown', outsideClickHandler, true); }
+      if (e.key === 'Escape') { saved = true; document.removeEventListener('pointerdown', outsideClickHandler, true); tempCard.remove(); }
     };
   } else if (subTab === 'plan') {
     openPlanEditor();
