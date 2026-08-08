@@ -6147,35 +6147,19 @@ function handleAdd() {
       renderActions();
       toast('已添加');
     };
-    // 保存触发：
-    // 1) 点击保存按钮
-    // 2) 输入框失焦且焦点移到卡片外部
-    // 3) 下拉框失焦且焦点移到卡片外部
-    // 点击下拉框选项期间不会误保存
-    let selectInteracting = false;
-    modeSelect.onpointerdown = () => { selectInteracting = true; };
-    modeSelect.onfocus = () => { selectInteracting = true; };
-    modeSelect.onblur = () => { selectInteracting = false; };
-
-    const shouldSaveOnBlur = (related) => {
-      if (saved) return false;
-      if (selectInteracting) return false;
-      if (related && tempCard.contains(related)) return false;
-      return true;
-    };
-
-    input.addEventListener('focusout', (e) => {
-      if (shouldSaveOnBlur(e.relatedTarget)) save();
-    });
-    modeSelect.addEventListener('focusout', (e) => {
-      if (shouldSaveOnBlur(e.relatedTarget)) save();
-    });
-
     tempCard.querySelector('.save-btn').onclick = save;
     input.onkeydown = (e) => {
       if (e.key === 'Enter') { e.preventDefault(); save(); }
       if (e.key === 'Escape') { saved = true; tempCard.remove(); }
     };
+    // 点击卡片外部区域时保存（下拉框选项选择不算外部点击）
+    const outsideClickHandler = (e) => {
+      if (saved) { document.removeEventListener('click', outsideClickHandler, true); return; }
+      if (tempCard.contains(e.target)) return;
+      document.removeEventListener('click', outsideClickHandler, true);
+      save();
+    };
+    setTimeout(() => document.addEventListener('click', outsideClickHandler, true), 0);
   } else if (subTab === 'plan') {
     openPlanEditor();
   } else if (subTab === 'training') {
