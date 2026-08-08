@@ -4818,8 +4818,8 @@
 <!-- 待办长按下拉菜单 -->
 <div class="td-menu-mask" id="todoMenuMask" onclick="closeTodoMenu(event)"></div>
 <div class="td-menu" id="todoMenu">
-  <div class="td-menu-item" id="todoMenuEdit" onclick="onTodoMenuEdit()">设置</div>
-  <div class="td-menu-item td-menu-danger" onclick="onTodoMenuDelete()">删除</div>
+  <div class="td-menu-item" id="todoMenuEdit" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="onTodoMenuEdit()">设置</div>
+  <div class="td-menu-item td-menu-danger" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="onTodoMenuDelete()">删除</div>
 </div>
 
 <!-- 删除确认弹窗 -->
@@ -8396,10 +8396,10 @@ function renderHomeWeekCalendar() {
     const isToday = key === todayKey;
     const isSelected = key === selectedKey;
 
-    // 合并该日待办并按象限去重
+    // 合并该日待办并按象限去重（仅未完成的）
     const dayTodosList = [
-      ...todos.filter(t => t.date === key),
-      ...calTodos.filter(ct => ct.date === key)
+      ...todos.filter(t => t.date === key && !t.done),
+      ...calTodos.filter(ct => ct.date === key && !ct.done)
     ];
     const seenCats = new Set();
     const dots = [];
@@ -8940,8 +8940,11 @@ function showTodoMenu(id, fromCal, isRep, x, y) {
   // 定位菜单（避免超出屏幕）
   menu.style.left = Math.min(x, window.innerWidth - 140) + 'px';
   menu.style.top = Math.min(y, window.innerHeight - 100) + 'px';
-  menu.classList.add('show');
-  mask.classList.add('show');
+  // 延迟显示避免 touchend 后误触发菜单项 click
+  setTimeout(() => {
+    menu.classList.add('show');
+    mask.classList.add('show');
+  }, 50);
 }
 
 function closeTodoMenu(e) {
@@ -11057,9 +11060,15 @@ document.getElementById('accountPanel').addEventListener('click', (e) => {
 
   grid.addEventListener('touchend', (e) => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    const item = e.target.closest('.qc-todo-item');
-    if (!item) return;
-    if (longPressed) { e.preventDefault(); return; }
+    if (longPressed) {
+      longPressed = false;
+      // 阻止长按松手时误触菜单项
+      e.preventDefault();
+      e.stopPropagation();
+      // 延迟重置，防止后续 click 冒泡到菜单项
+      setTimeout(() => { longPressed = false; }, 100);
+      return;
+    }
     // 训练项点击跳转到计划列表
     if (item.dataset.train) { goToPlan(item.dataset.train); return; }
     // 训练象限待办点击圆圈 → 跳转训练列表并匹配
@@ -11088,7 +11097,7 @@ document.getElementById('accountPanel').addEventListener('click', (e) => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     const item = e.target.closest('.qc-todo-item');
     if (!item) return;
-    if (longPressed) return;
+    if (longPressed) { longPressed = false; return; }
     // 训练项点击跳转到计划列表
     if (item.dataset.train) { goToPlan(item.dataset.train); return; }
     // 训练象限待办点击圆圈 → 跳转训练列表并匹配
