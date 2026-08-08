@@ -4684,10 +4684,10 @@
 <div class="plan-sheet-mask" id="planSheetMask" onclick="closePlanSheet()">
   <div class="plan-sheet" id="planSheet" onclick="event.stopPropagation()">
     <div class="plan-sheet-tabs">
-      <div class="plan-sheet-tab plan-sheet-date-tab active" id="planSheetTabToday" onmousedown="event.preventDefault()" onclick="pickPlanSheetDateTab('today')">今天</div>
-      <div class="plan-sheet-tab plan-sheet-date-tab" id="planSheetTabTomorrow" onmousedown="event.preventDefault()" onclick="pickPlanSheetDateTab('tomorrow')">明天</div>
-      <div class="plan-sheet-tab plan-sheet-date-tab" id="planSheetTabOther" onmousedown="event.preventDefault()" onclick="pickPlanSheetDateTab('other')">其他日期</div>
-      <div class="plan-sheet-tab" id="planAttrQuad" onmousedown="event.preventDefault()" onclick="toggleTrainPlanPicker()">健身计划</div>
+      <div class="plan-sheet-tab plan-sheet-date-tab active" id="planSheetTabToday" onclick="pickPlanSheetDateTab('today')">今天</div>
+      <div class="plan-sheet-tab plan-sheet-date-tab" id="planSheetTabTomorrow" onclick="pickPlanSheetDateTab('tomorrow')">明天</div>
+      <div class="plan-sheet-tab plan-sheet-date-tab" id="planSheetTabOther" onclick="pickPlanSheetDateTab('other')">其他日期</div>
+      <div class="plan-sheet-tab" id="planAttrQuad" onclick="toggleTrainPlanPicker()">健身计划</div>
     </div>
     <div class="plan-sheet-body">
       <div class="plan-input-row">
@@ -10313,9 +10313,15 @@ function openPlanSheet(catId, customDate) {
   document.querySelectorAll('.plan-repeat-chip').forEach(c => c.classList.toggle('active', c.dataset.rtype === 'none'));
   updateRepeatPanelUI();
 
-  // 直接显示弹窗，不跟随键盘
+  // 直接显示弹窗，不自动聚焦输入框
   sheet.classList.add('show');
-  setTimeout(() => { try { input.focus(); } catch(e) {} }, 100);
+
+  // 点击弹窗内非输入框区域时收起输入法
+  sheet.onpointerdown = (e) => {
+    if (e.target.id !== 'planInput' && !e.target.closest('.quad-picker')) {
+      if (input && document.activeElement === input) input.blur();
+    }
+  };
 }
 
 function closePlanSheet() {
