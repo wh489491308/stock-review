@@ -4691,7 +4691,7 @@
     </div>
     <div class="plan-sheet-body">
       <div class="plan-input-row">
-        <div class="plan-input-icon" onclick="togglePlanQuad()">无</div>
+        <div class="plan-input-icon" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="togglePlanQuad()">无</div>
         <div class="plan-input-divider"></div>
         <input type="text" class="plan-input" id="planInput" placeholder="我准备做..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
         <div class="plan-input-check" onclick="confirmPlanSheet()">
@@ -10500,12 +10500,6 @@ function togglePlanQuad() {
   });
   mask.classList.add('show');
   picker.style.display = 'block';
-
-  // 保持输入法不收回
-  setTimeout(() => {
-    const input = document.getElementById('planInput');
-    if (input) { try { input.focus(); } catch(e) {} }
-  }, 50);
 }
 
 // 关闭四象限选择器
@@ -10521,11 +10515,6 @@ function pickQuad(quad) {
   planSheetCatId = quad;
   updateQuadUI();
   closeQuadPicker();
-  // 保持输入法不收回
-  setTimeout(() => {
-    const input = document.getElementById('planInput');
-    if (input) { try { input.focus(); } catch(e) {} }
-  }, 50);
   toast('已切换：' + (QUAD_CONFIG[quad] && QUAD_CONFIG[quad].full));
 }
 
