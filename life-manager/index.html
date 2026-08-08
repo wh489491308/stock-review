@@ -612,6 +612,7 @@
     background: linear-gradient(135deg, #FFF9E6 0%, #FFEFC8 100%);
     overflow: hidden;
     margin-bottom: 8px;
+    margin-top: 5px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     flex-shrink: 0;
   }
@@ -679,6 +680,7 @@
     display: flex;
     align-items: center;
     padding: 0 0 8px 0;
+    margin-top: 10px;
     flex-shrink: 0;
   }
   .home-todo-banner {
@@ -815,6 +817,7 @@
     padding: 8px 16px 2px;
     background: #fff;
     margin-bottom: 8px;
+    margin-top: 7px;
     flex-shrink: 0;
   }
   .hwc-cell {
@@ -966,7 +969,11 @@
     flex-direction: column;
     padding: 30px 8px 6px;
     box-shadow: 2px 2px 0 rgba(0,0,0,0.08);
-    height: 195px;
+    min-height: 0;
+  }
+  .quadrant-card:nth-child(1),
+  .quadrant-card:nth-child(2) {
+    margin-top: 15px;
   }
   /* 螺旋装订环 — 三个椭圆 */
   .qc-spiral {
