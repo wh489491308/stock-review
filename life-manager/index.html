@@ -1768,6 +1768,7 @@
     cursor: pointer;
     width: 38px;
     height: 38px;
+    position: relative;
   }
   .date-picker-day.dp-placeholder { visibility: hidden; pointer-events: none; }
   .date-picker-day.weekend { color: #ffa726; }
@@ -1775,6 +1776,38 @@
   .date-picker-day.selected { background: #ffa726; color: #fff; }
   .date-picker-day.today.selected { background: #ffa726; color: #fff; border-color: #ffa726; }
   .date-picker-day:not(.selected):not(.dp-placeholder):active { background: #f5f5f5; }
+
+  /* 日期格子右下角"休/班"法定节假日悬浮标记（不影响排版） */
+  .dpd-holiday {
+    position: absolute;
+    right: 1px;
+    bottom: 0px;
+    font-size: 8px;
+    font-weight: 700;
+    line-height: 1;
+    z-index: 3;
+    pointer-events: none;
+  }
+  /* 弹窗日历（a/b/c）："休/班"水平居中于格子，再上移 1px */
+  #datePicker .dpd-holiday {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(-1px);
+    bottom: 4px;
+  }
+  .dpd-holiday-休 { color: #e53935; }
+  .dpd-holiday-班 { color: #ff9800; }
+  /* 选中态下保证标记可见 */
+  .date-picker-day.selected .dpd-holiday { color: #fff; }
+  .cal-month .date-picker-day .dpd-holiday {
+    right: 2px;
+    bottom: 1px;
+    font-size: 8px;
+  }
+  /* 大日历选中态保持标记颜色 */
+  .cal-month .date-picker-day.selected .dpd-holiday,
+  .cal-month .date-picker-day.today.selected .dpd-holiday { color: inherit; }
+  .cal-month .date-picker-day.other-month .dpd-holiday { display: none; }
 
   /* 日历页面（内嵌，非弹窗） */
   .cal-page {
@@ -4409,6 +4442,42 @@
     border-top: 1px solid #f5f5f5;
   }
 
+  /* 计划编辑器：动作卡片左滑删除容器 */
+  .ps-item-wrap {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  .ps-item-wrap:last-child { border-bottom: none; }
+  /* 菜单展开时取消裁剪，避免下拉菜单被遮挡 */
+  .ps-item-wrap.menu-open { overflow: visible; }
+  .ps-item-wrap .plan-selected-item {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    border-bottom: none;
+    border-top: none;
+    transition: transform 0.25s ease;
+    touch-action: pan-y;
+  }
+  .ps-item-wrap.revealed .plan-selected-item {
+    transform: translateX(-56px);
+  }
+  .ps-item-wrap .ps-delete-swipe {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 56px;
+    background: #ff3b30;
+    color: #fff;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    z-index: 0;
+  }
+
   /* 训练内容行：滑动删除容器 */
   .tmpl-row-wrap {
     position: relative;
@@ -4718,15 +4787,17 @@
             <div class="plan-repeat-chip" data-rtype="week" onclick="selectPlanRepeat('week', this)">每周</div>
             <div class="plan-repeat-chip" data-rtype="month" onclick="selectPlanRepeat('month', this)">每月</div>
             <div class="plan-repeat-chip" data-rtype="year" onclick="selectPlanRepeat('year', this)">每年</div>
+            <div class="plan-repeat-chip" data-rtype="workday" onclick="selectPlanRepeat('workday', this)">法定工作日</div>
           </div>
           <div class="plan-repeat-row disabled" id="planRepeatIntervalRow">
             <span class="plan-repeat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
             <span>重复日期</span>
-            <div class="plan-repeat-row-right">
-              <span>每</span>
+            <div class="plan-repeat-row-right" id="planRepeatIntervalRight">
+              <span class="pri-every">每</span>
               <div class="plan-repeat-value" id="planRepeatValue">1</div>
               <span class="plan-repeat-unit" id="planRepeatUnit">天</span>
-              <span>重复</span>
+              <span class="pri-repeat">重复</span>
+              <span class="plan-repeat-workday-text" style="display:none">每个法定工作日</span>
             </div>
           </div>
           <div class="plan-repeat-row disabled" id="planRepeatEndRow" onclick="pickRepeatEndDate()">
@@ -4973,6 +5044,47 @@ document.addEventListener('pointerdown', (e) => {
 let homeTodoSelectedDate = formatDateKey(new Date()); // 首页待办选中的日期
 const PARTS = ['胸部', '背部', '肩部', '手臂', '臀腿', '核心', '有氧', 'HIIT'];
 
+// 法定节假日（休=放假，班=调休上班）—— 数据来源：国务院办公厅关于2025/2026年部分节假日安排的通知
+const HOLIDAY_DATA = {
+  // ---- 2025 ----
+  '2025-01-01': '休',
+  '2025-01-26': '班', '2025-01-28': '休', '2025-01-29': '休', '2025-01-30': '休', '2025-01-31': '休',
+  '2025-02-01': '休', '2025-02-02': '休', '2025-02-03': '休', '2025-02-04': '休', '2025-02-08': '班',
+  '2025-04-04': '休', '2025-04-05': '休', '2025-04-06': '休', '2025-04-27': '班',
+  '2025-05-01': '休', '2025-05-02': '休', '2025-05-03': '休', '2025-05-04': '休', '2025-05-05': '休',
+  '2025-05-31': '休', '2025-06-01': '休', '2025-06-02': '休',
+  '2025-09-28': '班',
+  '2025-10-01': '休', '2025-10-02': '休', '2025-10-03': '休', '2025-10-04': '休', '2025-10-05': '休',
+  '2025-10-06': '休', '2025-10-07': '休', '2025-10-08': '休', '2025-10-11': '班',
+  // ---- 2026 ----
+  '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '班',
+  '2026-02-14': '班', '2026-02-15': '休', '2026-02-16': '休', '2026-02-17': '休', '2026-02-18': '休',
+  '2026-02-19': '休', '2026-02-20': '休', '2026-02-21': '休', '2026-02-22': '休', '2026-02-23': '休', '2026-02-28': '班',
+  '2026-04-04': '休', '2026-04-05': '休', '2026-04-06': '休',
+  '2026-05-01': '休', '2026-05-02': '休', '2026-05-03': '休', '2026-05-04': '休', '2026-05-05': '休', '2026-05-09': '班',
+  '2026-06-19': '休', '2026-06-20': '休', '2026-06-21': '休',
+  '2026-09-20': '班', '2026-09-25': '休', '2026-09-26': '休', '2026-09-27': '休',
+  '2026-10-01': '休', '2026-10-02': '休', '2026-10-03': '休', '2026-10-04': '休', '2026-10-05': '休',
+  '2026-10-06': '休', '2026-10-07': '休', '2026-10-10': '班'
+};
+// 获取日期的法定标记：'休' | '班' | null
+function getHolidayTag(key){ return HOLIDAY_DATA[key] || null; }
+// 判断某日是否为法定工作日（不是法定放假 且 非周末，或调休上班）
+function isLegalWorkday(dateKey) {
+  const tag = HOLIDAY_DATA[dateKey];
+  if (tag === '休') return false;
+  if (tag === '班') return true;
+  const d = new Date(dateKey + 'T00:00:00');
+  const w = d.getDay();
+  return w !== 0 && w !== 6;
+}
+// 生成日期格子右下角的"休/班"悬浮标记 HTML（不影响排版）
+function holidayTagHtml(key) {
+  const tag = getHolidayTag(key);
+  if (!tag) return '';
+  return `<span class="dpd-holiday dpd-holiday-${tag}">${tag}</span>`;
+}
+
 const STORE_KEYS = {
   actions: 'lm_actions',
   plans: 'lm_plans',
@@ -5012,10 +5124,12 @@ function switchTab(tab) {
     if (subTab === 'training' && !trainSession) {
       subTab = 'plan';
       saveJson(STORE_KEYS.subTab, 'plan');
-      document.querySelectorAll('.sub-tab').forEach(t => t.classList.toggle('active', t.dataset.subtab === 'plan'));
-      const tabsEl = document.getElementById('subTabs');
-      if (tabsEl) tabsEl.className = 'sub-tabs pos-2';
     }
+    // 同步顶部 sub-tab 高亮与滑块位置（避免初始 HTML 与 subTab 不一致）
+    document.querySelectorAll('.sub-tab').forEach(t => t.classList.toggle('active', t.dataset.subtab === subTab));
+    const posMap = { training: 1, plan: 2, action: 3 };
+    const tabsEl = document.getElementById('subTabs');
+    if (tabsEl) tabsEl.className = 'sub-tabs pos-' + (posMap[subTab] || 1);
     // 确保 sub-view 显示正确
     document.querySelectorAll('#viewTraining .sub-view').forEach(v => v.style.display = 'none');
     const targetId = subTab === 'training' ? 'subTraining' : subTab === 'action' ? 'subAction' : 'subPlan';
@@ -5709,6 +5823,9 @@ function initLongPressMenu(card) {
       // 查找父容器：动作库用 .action-list-inner，计划编辑器用 .pm-selected-list-card，训练界面用 .train-actions
       const inner = card.closest('.action-list-inner') || card.closest('.pm-selected-list-card') || card.closest('.train-actions');
       if (inner) inner.classList.add('menu-open');
+      // 计划编辑器：给动作卡片 wrap 也加 menu-open，避免下拉菜单被裁剪
+      const psWrap = card.closest('.ps-item-wrap');
+      if (psWrap) psWrap.classList.add('menu-open');
       // 训练界面还需要给 train-action-block 本身去掉 overflow:hidden
       const trainBlock = card.closest('.train-action-block');
       if (trainBlock) trainBlock.classList.add('menu-open');
@@ -5749,6 +5866,7 @@ function closeAllMenus() {
   document.querySelectorAll('.menu-panel.show').forEach(m => m.classList.remove('show'));
   document.querySelectorAll('.action-list-inner.menu-open').forEach(m => m.classList.remove('menu-open'));
   document.querySelectorAll('.pm-selected-list-card.menu-open').forEach(m => m.classList.remove('menu-open'));
+  document.querySelectorAll('.ps-item-wrap.menu-open').forEach(m => m.classList.remove('menu-open'));
   document.querySelectorAll('.train-action-block.menu-open').forEach(m => m.classList.remove('menu-open'));
 }
 
@@ -6327,21 +6445,24 @@ function renderPlanSelected() {
       switchItem = '<div class="menu-item" data-menu="switch">切换为常规组</div>';
     }
     return `
-      <div class="plan-selected-item" data-id="${a.id}">
-        <div class="ps-header">
-          <span class="ps-arrow">›</span>
-          <span class="part-pill part-${a.part}">${a.part}</span>
-          <span class="name">${escapeHtml(a.name)}</span>
-          <div class="menu-wrap">
-            <div class="menu-panel">
-              ${switchItem}
-              <div class="menu-item danger" data-menu="del">删除</div>
+      <div class="ps-item-wrap" data-id="${a.id}">
+        <button class="ps-delete-swipe" data-action="del-swipe">删除</button>
+        <div class="plan-selected-item" data-id="${a.id}">
+          <div class="ps-header">
+            <span class="ps-arrow">›</span>
+            <span class="part-pill part-${a.part}">${a.part}</span>
+            <span class="name">${escapeHtml(a.name)}</span>
+            <div class="menu-wrap">
+              <div class="menu-panel">
+                ${switchItem}
+                <div class="menu-item danger" data-menu="del">删除</div>
+              </div>
             </div>
+            <span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>
           </div>
-          <span class="drag-handle" data-action="drag"><span></span><span></span><span></span></span>
-        </div>
-        <div class="ps-body" data-action-id="${a.id}">
-          ${renderTemplateBody(a.id, type, tmpl.sets)}
+          <div class="ps-body" data-action-id="${a.id}">
+            ${renderTemplateBody(a.id, type, tmpl.sets)}
+          </div>
         </div>
       </div>
     `;
@@ -6411,10 +6532,69 @@ function renderPlanSelected() {
   wrap.querySelectorAll('.plan-selected-item').forEach(item => {
     initPlanItemDragHandle(item, item.querySelector('[data-action="drag"]'));
   });
+  // 绑定动作卡片左滑删除
+  wrap.querySelectorAll('.ps-item-wrap').forEach(w => {
+    bindPlanItemSwipe(w, w.querySelector('.plan-selected-item'));
+    const delSwipeBtn = w.querySelector('[data-action="del-swipe"]');
+    if (delSwipeBtn) {
+      delSwipeBtn.onclick = (e) => {
+        e.stopPropagation();
+        const id = w.dataset.id;
+        editingPlan.actionIds = editingPlan.actionIds.filter(x => x !== id);
+        delete editingPlan.templates[id];
+        renderPlanSelected();
+      };
+    }
+  });
   // 绑定模板行事件
   items.forEach(a => {
     bindTemplateRows(a.id, getPlanActionType(a, editingPlan));
   });
+}
+
+// 计划编辑器：动作卡片左划出现删除 / 右划收起
+function bindPlanItemSwipe(wrap, row) {
+  let startX = 0, startY = 0, currentX = 0, dragging = false, revealed = false;
+  const header = row.querySelector('.ps-header');
+  row.addEventListener('touchstart', (e) => {
+    // 只在 header 区域响应左滑；点在拖拽手柄 / 菜单 / 输入框上不响应
+    if (header && !header.contains(e.target)) return;
+    if (e.target.closest('[data-action="drag"]')) return;
+    if (e.target.closest('.menu-wrap')) return;
+    if (e.target.closest('.menu-panel')) return;
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'BUTTON' || tag === 'SELECT') return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    currentX = revealed ? -56 : 0;
+    dragging = true;
+  }, { passive: true });
+  row.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx)) return;
+    let newX = currentX + dx;
+    if (newX > 0) newX = 0;
+    if (newX < -56) newX = -56;
+    row.style.transition = 'none';
+    row.style.transform = `translateX(${newX}px)`;
+  }, { passive: true });
+  row.addEventListener('touchend', (e) => {
+    if (!dragging) return;
+    dragging = false;
+    row.style.transition = '';
+    const dx = (e.changedTouches[0].clientX - startX) + currentX;
+    if (dx < -28) {
+      revealed = true;
+      wrap.classList.add('revealed');
+      row.style.transform = '';
+    } else {
+      revealed = false;
+      wrap.classList.remove('revealed');
+      row.style.transform = '';
+    }
+  }, { passive: true });
 }
 
 // 渲染模板编辑体
@@ -9746,7 +9926,7 @@ function buildMonthDays(viewDate, selectedKey, pure) {
     const cls = ['other-month'];
     if (key === selectedKey) cls.push('selected');
     if (col % 7 === 0 || col % 7 === 6) cls.push('weekend');
-    html += `<div class="date-picker-day ${cls.join(' ')}" data-date="${key}"><span class="dpd-num">${d}</span>${dayContentHtml(key)}</div>`;
+    html += `<div class="date-picker-day ${cls.join(' ')}" data-date="${key}"><span class="dpd-num">${d}</span>${holidayTagHtml(key)}${dayContentHtml(key)}</div>`;
     col++;
   }
   // 当月
@@ -9756,7 +9936,7 @@ function buildMonthDays(viewDate, selectedKey, pure) {
     if (key === todayKey) cls.push('today');
     if (key === selectedKey) cls.push('selected');
     if (col % 7 === 0 || col % 7 === 6) cls.push('weekend');
-    html += `<div class="date-picker-day ${cls.join(' ')}" data-date="${key}"><span class="dpd-num">${day}</span>${dayContentHtml(key)}</div>`;
+    html += `<div class="date-picker-day ${cls.join(' ')}" data-date="${key}"><span class="dpd-num">${day}</span>${holidayTagHtml(key)}${dayContentHtml(key)}</div>`;
     col++;
   }
   // 下月
@@ -9768,7 +9948,7 @@ function buildMonthDays(viewDate, selectedKey, pure) {
     const cls = ['other-month'];
     if (key === selectedKey) cls.push('selected');
     if (col % 7 === 0 || col % 7 === 6) cls.push('weekend');
-    html += `<div class="date-picker-day ${cls.join(' ')}" data-date="${key}"><span class="dpd-num">${d}</span>${dayContentHtml(key)}</div>`;
+    html += `<div class="date-picker-day ${cls.join(' ')}" data-date="${key}"><span class="dpd-num">${d}</span>${holidayTagHtml(key)}${dayContentHtml(key)}</div>`;
     col++;
   }
   // 缓存每日待办数据供展开面板使用
@@ -10433,6 +10613,8 @@ let planRepeatNumTemp = 1;
 
 function openPlanRepeatNumPicker() {
   if (planRepeatType === 'none') return;
+  // "法定工作日"不需要间隔，重复日期行不激活
+  if (planRepeatType === 'workday') return;
   planRepeatNumTemp = planRepeatInterval;
   renderPlanRepeatNumPicker();
   document.getElementById('planRepeatNumPickerMask').classList.add('show');
@@ -10502,9 +10684,11 @@ function updateRepeatPanelUI() {
   const unit = document.getElementById('planRepeatUnit');
   const valueEl = document.getElementById('planRepeatValue');
   const enabled = planRepeatType !== 'none';
+  // "法定工作日"：不显示重复间隔（重复日期行禁用），但结束重复行激活
+  const intervalEnabled = enabled && planRepeatType !== 'workday';
   if (intervalRow) {
-    intervalRow.classList.toggle('disabled', !enabled);
-    intervalRow.classList.toggle('active', enabled);
+    intervalRow.classList.toggle('disabled', !intervalEnabled);
+    intervalRow.classList.toggle('active', intervalEnabled);
   }
   if (endRow) {
     endRow.classList.toggle('disabled', !enabled);
@@ -10513,6 +10697,16 @@ function updateRepeatPanelUI() {
   const unitMap = { day: '天', week: '周', month: '月', year: '年' };
   if (unit) unit.textContent = unitMap[planRepeatType] || '天';
   if (valueEl) valueEl.textContent = planRepeatInterval;
+  // 法定工作日：右侧显示"每个法定工作日"，隐藏间隔文案
+  const isWorkday = planRepeatType === 'workday';
+  const rightBox = document.getElementById('planRepeatIntervalRight');
+  if (rightBox) {
+    rightBox.querySelectorAll('.pri-every, .plan-repeat-value, .plan-repeat-unit, .pri-repeat').forEach(el => {
+      el.style.display = isWorkday ? 'none' : '';
+    });
+    const wText = rightBox.querySelector('.plan-repeat-workday-text');
+    if (wText) wText.style.display = isWorkday ? '' : 'none';
+  }
   // 同步结束重复按钮的颜色/可点
   const endLabel = document.getElementById('planRepeatEndLabel');
   if (endLabel && planRepeatEndDate) endLabel.textContent = formatDateDisplay(planRepeatEndDate);
@@ -10827,6 +11021,14 @@ function confirmPlanSheet() {
       } else if (planRepeatType === 'year') {
         next = new Date(cursor);
         next.setFullYear(next.getFullYear() + interval);
+      } else if (planRepeatType === 'workday') {
+        // 法定工作日：从次日起逐日查找下一个法定工作日
+        next = new Date(cursor.getTime() + 86400000);
+        let guard = 0;
+        while (!isLegalWorkday(formatDateKey(next)) && guard < 400) {
+          next = new Date(next.getTime() + 86400000);
+          guard++;
+        }
       }
       if (endDate && next.getTime() > endDate.getTime()) break;
       cursor = next;
