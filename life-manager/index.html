@@ -829,6 +829,7 @@
     cursor: pointer;
     user-select: none;
     padding: 4px 0;
+    position: relative;
   }
   .hwc-cell:active { opacity: 0.7; }
   .hwc-weekday {
@@ -876,6 +877,11 @@
     font-weight: 700;
     color: #ff4d4f;
     line-height: 1;
+    position: absolute;
+    top: 33px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
   }
   .home-todo-title::before {
     content: '';
@@ -8861,6 +8867,7 @@ function handleImportFile(event) {
       if (data.bodyData) localStorage.setItem('lm_body_data', JSON.stringify(data.bodyData));
       if (typeof renderCalPage === 'function') renderCalPage();
       if (typeof renderHomeTodos === 'function') renderHomeTodos();
+      if (typeof renderHomeWeekCalendar === 'function') renderHomeWeekCalendar();
       if (typeof renderTrainingTab === 'function') renderTrainingTab();
       if (typeof renderAll === 'function') renderAll();
       toast('数据导入成功');
@@ -9419,6 +9426,8 @@ function bindExpenseSwipe(wrap) {
     const id = wrap.dataset.id;
     expenses = expenses.filter(x => x.id !== id);
     saveExpenses();
+    renderMonthExpenseCard();
+    renderHomeWeekCalendar();
     // 如果日历页面当前可见，刷新日历
     if (document.getElementById('viewCalendar').classList.contains('active')) {
       renderCalPage();
@@ -10875,6 +10884,8 @@ function handleAccountKey(key) {
       expenses = expenses.filter(item => item && item.date);
       saveExpenses();
       closeAccountPanel();
+      renderMonthExpenseCard();
+      renderHomeWeekCalendar();
       // 如果日历页面当前可见，刷新日历以显示最新支出
       if (document.getElementById('viewCalendar').classList.contains('active')) {
         renderCalPage();
@@ -10901,6 +10912,8 @@ function handleAccountKey(key) {
       });
       expenses = expenses.filter(item => item && item.date);
       saveExpenses();
+      renderMonthExpenseCard();
+      renderHomeWeekCalendar();
       // 如果日历页面当前可见，刷新日历以显示最新支出
       if (document.getElementById('viewCalendar').classList.contains('active')) {
         renderCalPage();
