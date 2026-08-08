@@ -10539,6 +10539,10 @@ let trainPlanSelectedName = '';
 let trainPlanSelectedPart = '';
 
 function toggleTrainPlanPicker() {
+  // 收起输入法
+  const input = document.getElementById('planInput');
+  if (input) input.blur();
+
   const mask = document.getElementById('trainPlanPickerMask');
   const picker = document.getElementById('trainPlanPicker');
   if (!mask || !picker) return;
