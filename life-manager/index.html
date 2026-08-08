@@ -1111,11 +1111,12 @@
     border-bottom: none;
   }
   .qc-todo-item.done {
-    opacity: 0.5;
+    /* opacity: 0.5; */
   }
   .qc-todo-item.done .qti-text {
     text-decoration: line-through;
     color: #999;
+    opacity: 0.5;
   }
   .qc-todo-item .qti-check {
     width: 18px; height: 18px;
@@ -1145,6 +1146,39 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* 待办项左滑删除容器 */
+  .qc-item-wrap {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1.5px dashed #d0d0d0;
+  }
+  .qc-item-wrap:last-child { border-bottom: none; }
+  .qc-item-wrap .qc-todo-item {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    border-bottom: none;
+    transition: transform 0.25s ease;
+    touch-action: pan-y;
+  }
+  .qc-item-wrap.revealed .qc-todo-item {
+    transform: translateX(-56px);
+  }
+  .qc-item-wrap .qc-delete-swipe {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 56px;
+    background: #ff3b30;
+    color: #fff;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    z-index: 0;
   }
 
   /* 空状态 */
@@ -8769,17 +8803,23 @@ function renderHomeTodos() {
     } else {
       const listHtml = items.map(t => {
         if (t._isTrain) {
-          return `<div class="qc-todo-item ${t.done ? 'done' : ''}" data-train="${t.planId}">
-            <span class="qti-check">✓</span>
-            <span class="qti-text">${escapeHtml(t.text)}</span>
+          return `<div class="qc-item-wrap" data-id="${t.id}">
+            <button class="qc-delete-swipe" data-action="del-swipe">删除</button>
+            <div class="qc-todo-item ${t.done ? 'done' : ''}" data-train="${t.planId}">
+              <span class="qti-check">✓</span>
+              <span class="qti-text">${escapeHtml(t.text)}</span>
+            </div>
           </div>`;
         }
         // 健身计划（isTrainPlan）：圆圈点击跳转训练列表
         const isTrainPlan = t.isTrainPlan === true;
         const isRep = t.repeatType && t.repeatType !== 'none';
-        return `<div class="qc-todo-item ${t.done ? 'done' : ''}" data-id="${t.id}" data-fromcal="${t._fromCal ? 1 : 0}" data-rep="${isRep ? 1 : 0}" ${isTrainPlan ? `data-train-todo="1" data-train-text="${escapeHtml(t.text || '')}"` : ''}>
-          <span class="qti-check">✓</span>
-          <span class="qti-text">${escapeHtml(t.text)}</span>
+        return `<div class="qc-item-wrap" data-id="${t.id}" data-fromcal="${t._fromCal ? 1 : 0}" data-rep="${isRep ? 1 : 0}" ${isTrainPlan ? `data-train-todo="1" data-train-text="${escapeHtml(t.text || '')}"` : ''}>
+          <button class="qc-delete-swipe" data-action="del-swipe">删除</button>
+          <div class="qc-todo-item ${t.done ? 'done' : ''}" data-id="${t.id}" data-fromcal="${t._fromCal ? 1 : 0}" data-rep="${isRep ? 1 : 0}" ${isTrainPlan ? `data-train-todo="1" data-train-text="${escapeHtml(t.text || '')}"` : ''}>
+            <span class="qti-check">✓</span>
+            <span class="qti-text">${escapeHtml(t.text)}</span>
+          </div>
         </div>`;
       }).join('');
       bodyHtml = `<div class="qc-todo-list">${listHtml}</div>`;
@@ -11361,86 +11401,109 @@ document.getElementById('accountPanel').addEventListener('click', (e) => {
   if (valueEl) valueEl.addEventListener('click', () => openPlanRepeatNumPicker());
 })();
 
-// 待办项：单击切换完成 + 长按弹出菜单
+// 待办项：单击圆框切换完成 + 双击进入设置 + 左滑出现删除
 (() => {
   const grid = document.getElementById('homeTodoGrid');
   if (!grid) return;
-  let pressTimer = null;
-  let longPressed = false;
   let startX = 0, startY = 0;
+  let lastTapTime = 0;
+  let lastTapItem = null;
 
-  grid.addEventListener('touchstart', (e) => {
-    const item = e.target.closest('.qc-todo-item');
-    if (!item || item.dataset.train) return;
-    longPressed = false;
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    pressTimer = setTimeout(() => {
-      // 仅未完成状态可长按
-      if (item.classList.contains('done')) return;
-      longPressed = true;
-      if (navigator.vibrate) navigator.vibrate(10);
-      showTodoMenu(item.dataset.id, item.dataset.fromcal === '1', item.dataset.rep === '1', startX, startY);
-    }, 500);
-  }, { passive: true });
-
-  grid.addEventListener('touchmove', (e) => {
-    if (!pressTimer) return;
-    const dx = Math.abs(e.touches[0].clientX - startX);
-    const dy = Math.abs(e.touches[0].clientY - startY);
-    if (dx > 10 || dy > 10) { clearTimeout(pressTimer); pressTimer = null; }
-  }, { passive: true });
-
-  grid.addEventListener('touchend', (e) => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    if (longPressed) {
-      longPressed = false;
-      // 阻止长按松手时误触菜单项
-      e.preventDefault();
-      e.stopPropagation();
-      // 重新激活 click 拦截并延长解除时间，防止长按较久松手后合成的 click 触发菜单项（如"设置"）
-      todoMenuBlockClicks = true;
-      setTimeout(() => { longPressed = false; }, 100);
-      setTimeout(() => { todoMenuBlockClicks = false; }, 500);
-      return;
+  // 双击检测：300ms 内同一 item 再次触发视为双击
+  function isDoubleTap(item) {
+    const now = Date.now();
+    if (lastTapItem === item && now - lastTapTime < 300) {
+      lastTapTime = 0;
+      lastTapItem = null;
+      return true;
     }
-    // 训练项点击跳转到计划列表
-    if (item.dataset.train) { goToPlan(item.dataset.train); return; }
-    // 训练象限待办点击圆圈：已完成则切换为未完成（不跳转），未完成则跳转训练列表
-    if (item.dataset.trainTodo && e.target.closest('.qti-check')) {
-      if (item.classList.contains('done')) {
-        toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
-        return;
+    lastTapTime = now;
+    lastTapItem = item;
+    return false;
+  }
+
+  // 左滑手势绑定
+  function bindItemSwipe(wrap, row) {
+    let sX = 0, sY = 0, curX = 0, dragging = false, revealed = false;
+    row.addEventListener('touchstart', (e) => {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'BUTTON') return;
+      sX = e.touches[0].clientX;
+      sY = e.touches[0].clientY;
+      curX = revealed ? -56 : 0;
+      dragging = true;
+    }, { passive: true });
+    row.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      const dx = e.touches[0].clientX - sX;
+      const dy = e.touches[0].clientY - sY;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      let nx = curX + dx;
+      if (nx > 0) nx = 0;
+      if (nx < -56) nx = -56;
+      row.style.transition = 'none';
+      row.style.transform = `translateX(${nx}px)`;
+    }, { passive: true });
+    row.addEventListener('touchend', (e) => {
+      if (!dragging) return;
+      dragging = false;
+      row.style.transition = '';
+      const dx = (e.changedTouches[0].clientX - sX) + curX;
+      if (dx < -28) {
+        revealed = true;
+        wrap.classList.add('revealed');
+        row.style.transform = '';
+      } else {
+        revealed = false;
+        wrap.classList.remove('revealed');
+        row.style.transform = '';
       }
-      goToTrainingPlan(item.dataset.trainText);
-      return;
-    }
-    // 只点击圆形才切换完成
-    if (!e.target.closest('.qti-check')) return;
-    toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
+    }, { passive: true });
+  }
+
+  // 删除按钮点击
+  grid.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-action="del-swipe"]');
+    if (!delBtn) return;
+    e.stopPropagation();
+    const wrap = delBtn.closest('.qc-item-wrap');
+    if (!wrap) return;
+    const id = wrap.dataset.id;
+    const fromCal = wrap.dataset.fromcal === '1';
+    const isRep = wrap.dataset.rep === '1';
+    openTodoDeleteConfirm(id, fromCal, isRep);
   });
 
-  // 桌面端支持
-  grid.addEventListener('mousedown', (e) => {
-    const item = e.target.closest('.qc-todo-item');
-    if (!item || item.dataset.train) return;
-    if (item.classList.contains('done')) return;
-    startX = e.clientX; startY = e.clientY;
-    longPressed = false;
-    pressTimer = setTimeout(() => {
-      longPressed = true;
-      showTodoMenu(item.dataset.id, item.dataset.fromcal === '1', item.dataset.rep === '1', startX, startY);
-    }, 500);
-  });
-  grid.addEventListener('mouseup', (e) => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  // 绑定每个待办项的左滑
+  function bindAllSwipes() {
+    grid.querySelectorAll('.qc-item-wrap').forEach(wrap => {
+      const row = wrap.querySelector('.qc-todo-item');
+      if (row) bindItemSwipe(wrap, row);
+    });
+  }
+  bindAllSwipes();
+  // 渲染后重新绑定
+  const origRender = window.renderHomeTodos;
+  if (typeof origRender === 'function') {
+    window.renderHomeTodos = function() { origRender.apply(this, arguments); bindAllSwipes(); };
+  }
+
+  // 单击/双击处理（touchend）
+  grid.addEventListener('touchend', (e) => {
     const item = e.target.closest('.qc-todo-item');
     if (!item) return;
-    if (longPressed) { longPressed = false; return; }
     // 训练项点击跳转到计划列表
     if (item.dataset.train) { goToPlan(item.dataset.train); return; }
+    const onCheck = e.target.closest('.qti-check');
+    // 双击（非圆框区域）→ 进入设置
+    if (!onCheck && isDoubleTap(item)) {
+      e.preventDefault();
+      if (item.dataset.fromcal === '1') { toast('日历待办不支持编辑'); return; }
+      editTodoItem(item.dataset.id);
+      return;
+    }
     // 训练象限待办点击圆圈：已完成则切换为未完成（不跳转），未完成则跳转训练列表
-    if (item.dataset.trainTodo && e.target.closest('.qti-check')) {
+    if (item.dataset.trainTodo && onCheck) {
       if (item.classList.contains('done')) {
         toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
         return;
@@ -11449,14 +11512,38 @@ document.getElementById('accountPanel').addEventListener('click', (e) => {
       return;
     }
     // 只点击圆形才切换完成
-    if (!e.target.closest('.qti-check')) return;
+    if (!onCheck) return;
     toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
   });
-  grid.addEventListener('mousemove', (e) => {
-    if (!pressTimer) return;
-    if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
-      clearTimeout(pressTimer); pressTimer = null;
+
+  // 桌面端：dblclick 进入设置
+  grid.addEventListener('dblclick', (e) => {
+    const item = e.target.closest('.qc-todo-item');
+    if (!item) return;
+    if (item.dataset.train) return;
+    if (e.target.closest('.qti-check')) return;
+    if (item.dataset.fromcal === '1') { toast('日历待办不支持编辑'); return; }
+    editTodoItem(item.dataset.id);
+  });
+
+  // 桌面端单击
+  grid.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-action="del-swipe"]');
+    if (delBtn) return; // 删除按钮已处理
+    const item = e.target.closest('.qc-todo-item');
+    if (!item) return;
+    if (item.dataset.train) { goToPlan(item.dataset.train); return; }
+    const onCheck = e.target.closest('.qti-check');
+    if (item.dataset.trainTodo && onCheck) {
+      if (item.classList.contains('done')) {
+        toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
+        return;
+      }
+      goToTrainingPlan(item.dataset.trainText);
+      return;
     }
+    if (!onCheck) return;
+    toggleTodoItem(item.dataset.id, item.dataset.fromcal === '1');
   });
 })();
 
