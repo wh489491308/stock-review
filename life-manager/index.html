@@ -6151,14 +6151,9 @@ function handleAdd() {
 
     // 防止点击训练类型下拉框时误保存：select 获得/失去焦点期间屏蔽保存
     let selectInteracting = false;
-    let selectBlurTimer = null;
-    modeSelect.onfocus = () => {
-      selectInteracting = true;
-      clearTimeout(selectBlurTimer);
-    };
-    modeSelect.onblur = () => {
-      selectBlurTimer = setTimeout(() => { selectInteracting = false; }, 200);
-    };
+    modeSelect.onpointerdown = () => { selectInteracting = true; };
+    modeSelect.onfocus = () => { selectInteracting = true; };
+    modeSelect.onblur = () => { selectInteracting = false; };
 
     // 输入框失焦时保存：仅当焦点移到卡片外部（且不是下拉框交互）时才保存
     input.addEventListener('focusout', (e) => {
