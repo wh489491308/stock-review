@@ -2502,22 +2502,21 @@
 
   .plan-sheet {
     position: fixed;
-    left: 0; right: 0;
-    /* bottom 跟随键盘高度（--kb-h 由 visualViewport 实时驱动），让弹窗始终贴键盘顶部 */
-    bottom: calc(var(--kb-h, 0px) + env(safe-area-inset-bottom, 0px));
+    left: 12px; right: 12px;
+    top: 50%;
+    transform: translateY(-50%) scale(0.95);
     z-index: 220;
     background: #fff;
-    border-radius: 16px 16px 0 0;
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
-    transform: translateY(100%);
-    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
-    /* 高度由内容撑开，max-height 留余量 */
-    max-height: 90vh;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    max-height: 70vh;
     overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .plan-sheet.show { transform: translateY(0); }
+  .plan-sheet.show { opacity: 1; transform: translateY(-50%) scale(1); }
 
   /* 顶部 Tab */
   .plan-sheet-tabs {
@@ -4696,7 +4695,7 @@
       <div class="plan-input-row">
         <div class="plan-input-icon" onclick="togglePlanQuad()">无</div>
         <div class="plan-input-divider"></div>
-        <input type="text" class="plan-input" id="planInput" placeholder="我准备做...">
+        <input type="text" class="plan-input" id="planInput" placeholder="我准备做..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
         <div class="plan-input-check" onclick="confirmPlanSheet()">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
         </div>
@@ -9528,14 +9527,6 @@ function openRepeatEndDatePicker(initial, onConfirm) {
 function closeDatePicker(e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById('datePickerMask').classList.remove('show');
-  // 仅"其他日期"场景需要恢复输入框焦点（结束重复场景不碰输入法）
-  if (datePickerRestoreInput) {
-    const planMask = document.getElementById('planSheetMask');
-    if (planMask && planMask.classList.contains('show')) {
-      const input = document.getElementById('planInput');
-      if (input) { try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); } }
-    }
-  }
 }
 
 function confirmDatePicker() {
@@ -10321,33 +10312,9 @@ function openPlanSheet(catId, customDate) {
   document.querySelectorAll('.plan-repeat-chip').forEach(c => c.classList.toggle('active', c.dataset.rtype === 'none'));
   updateRepeatPanelUI();
 
-  // 先触发输入框聚焦 → 键盘开始弹起（visualViewport 会持续报告键盘高度到 --kb-h）
-  // 等键盘开始弹起（--kb-h > 0）后再触发弹窗滑入，确保弹窗从键盘顶部位置滑入，与键盘同步上升、始终衔接
-  let kbStarted = false;
-  let shown = false;
-  const showSheet = () => {
-    if (shown) return;
-    shown = true;
-    sheet.classList.add('show');
-  };
-
-  try { input.focus({ preventScroll: true }); } catch (e) { try { input.focus(); } catch (e2) {} }
-
-  if (window.visualViewport) {
-    const onKb = () => {
-      const kbH = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
-      if (kbH > 0 && !kbStarted) {
-        kbStarted = true;
-        // 键盘已开始弹起，下一帧让弹窗滑入（此时 bottom 已贴键盘顶部）
-        requestAnimationFrame(showSheet);
-      }
-    };
-    window.visualViewport.addEventListener('resize', onKb, { once: false });
-    window.visualViewport.addEventListener('scroll', onKb, { once: false });
-  }
-
-  // 兜底：若 250ms 内键盘未弹起（桌面/无键盘环境），直接显示弹窗
-  setTimeout(showSheet, 250);
+  // 直接显示弹窗，不跟随键盘
+  sheet.classList.add('show');
+  setTimeout(() => { try { input.focus(); } catch(e) {} }, 100);
 }
 
 function closePlanSheet() {
